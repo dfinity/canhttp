@@ -78,7 +78,7 @@ mod json_rpc {
 
     #[test]
     fn should_serialize_version() {
-        assert_eq!(serde_json::to_value(&Version::V2).unwrap(), json!("2.0"));
+        assert_eq!(serde_json::to_value(Version::V2).unwrap(), json!("2.0"));
     }
 
     #[test]
