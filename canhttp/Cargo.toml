@@ -11,22 +11,28 @@ include = ["src", "Cargo.toml", "CHANGELOG.md", "LICENSE", "README.md"]
 repository.workspace = true
 documentation = "https://docs.rs/canhttp"
 
+[features]
+default = ["http"]
+http = ["dep:http", "dep:num-traits", "dep:tower-layer"]
+json = ["http", "dep:serde", "dep:serde_json"]
+multi = ["dep:ciborium", "dep:sha2", "dep:futures-channel"]
+
 [dependencies]
 assert_matches = { workspace = true }
 ciborium = { workspace = true, optional = true }
-ic-cdk = { workspace = true }
-ic-error-types = { workspace = true }
-sha2 = { workspace = true, optional = true }
 futures-channel = { workspace = true, optional = true }
 futures-util = { workspace = true }
 http = { workspace = true, optional = true }
+ic-cdk = { workspace = true }
+ic-error-types = { workspace = true }
 num-traits = { workspace = true, optional = true }
 pin-project = { workspace = true }
 serde = { workspace = true, optional = true }
 serde_json = { workspace = true, optional = true }
+sha2 = { workspace = true, optional = true }
+thiserror = { workspace = true }
 tower = { workspace = true, features = ["retry"] }
 tower-layer = { workspace = true, optional = true }
-thiserror = { workspace = true }
 
 [dev-dependencies]
 candid = { workspace = true }
@@ -35,9 +41,3 @@ maplit = { workspace = true }
 proptest = { workspace = true }
 strum = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
-
-[features]
-default = ["http"]
-http = ["dep:http", "dep:num-traits", "dep:tower-layer"]
-json = ["http", "dep:serde", "dep:serde_json"]
-multi = ["dep:ciborium", "dep:sha2", "dep:futures-channel"]
