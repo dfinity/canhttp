@@ -34,11 +34,7 @@ async fn should_retry_until_max() {
         .unwrap_err();
     assert!(response.is_response_too_large());
 
-    let mut all_requests = Vec::new();
-    let mut iter = requests_rx.try_iter();
-    while let Some(req) = iter.next() {
-        all_requests.push(req);
-    }
+    let all_requests: Vec<_> = requests_rx.try_iter().collect();
 
     assert_eq!(all_requests.len(), 12);
     assert_eq!(
@@ -87,11 +83,7 @@ async fn should_not_retry() {
             .unwrap_err();
         assert!(response.is_response_too_large());
 
-        let mut all_requests = Vec::new();
-        let mut iter = requests_rx.try_iter();
-        while let Some(req) = iter.next() {
-            all_requests.push(req);
-        }
+        let all_requests: Vec<_> = requests_rx.try_iter().collect();
         assert_eq!(all_requests.len(), 1);
     }
 }
@@ -117,11 +109,7 @@ async fn should_stop_retrying_when_ok() {
     let response = service.ready().await.unwrap().call(request).await;
     assert_matches!(response, Ok(_));
 
-    let mut all_requests = Vec::new();
-    let mut iter = requests_rx.try_iter();
-    while let Some(req) = iter.next() {
-        all_requests.push(req);
-    }
+    let all_requests: Vec<_> = requests_rx.try_iter().collect();
 
     assert_eq!(all_requests.len(), (num_errors + 1) as usize);
     assert_eq!(

@@ -50,7 +50,7 @@ mod reduce_with_equality {
         for inconsistent_result in [Ok("different"), Err("offline")] {
             for index in 0..4 {
                 let mut results = [Ok("same"), Ok("same"), Ok("same"), Ok("same")];
-                results[index] = inconsistent_result.clone();
+                results[index] = inconsistent_result;
 
                 let [result_0, result_1, result_2, result_3] = results;
 
@@ -132,7 +132,7 @@ mod reduce_with_threshold {
         for inconsistent_result in [Ok("different"), Err("offline")] {
             for index_inconsistent in 0..4_usize {
                 let mut results = [Ok("same"), Ok("same"), Ok("same"), Ok("same")];
-                results[index_inconsistent] = inconsistent_result.clone();
+                results[index_inconsistent] = inconsistent_result;
                 let [result_0, result_1, result_2, result_3] = results;
 
                 check_consistent_result(
@@ -178,8 +178,8 @@ mod reduce_with_threshold {
         {
             for indexes in (0..4_usize).permutations(2) {
                 let mut results = [Ok("same"), Ok("same"), Ok("same"), Ok("same")];
-                results[indexes[0]] = inconsistent_res_1.clone();
-                results[indexes[1]] = inconsistent_res_2.clone();
+                results[indexes[0]] = *inconsistent_res_1;
+                results[indexes[1]] = inconsistent_res_2;
                 let [result_0, result_1, result_2, result_3] = results;
 
                 check_inconsistent_result(
