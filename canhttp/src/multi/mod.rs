@@ -397,7 +397,7 @@ impl<K, V, E> IntoIterator for MultiResults<K, V, E> {
 }
 
 impl<K, V, E> MultiResults<K, V, E> {
-    fn iter(&self) -> impl Iterator<Item = (&K, Result<&K, &V>)> {
+    fn iter(&self) -> impl Iterator<Item = (&K, Result<&V, &E>)> {
         self.ok_results
             .iter()
             .map(|(k, v)| (k, Ok(v)))
