@@ -338,6 +338,35 @@ impl<K: Ord, V, E> MultiResults<K, V, E> {
             self.insert_once_err(key, error);
         }
     }
+
+    /// Returns a borrowing iterator over the entries of a [`MultiResults`],
+    /// where the [`Ok`] results are given first (sorted by key) and then
+    /// the [`Err`] results (also sorted by key).
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use canhttp::multi::MultiResults;
+    ///
+    /// let results = MultiResults::from_non_empty_iter(vec![
+    ///     (0, Ok("yes")),
+    ///     (1, Err("wrong")),
+    ///     (2, Ok("no"))
+    /// ]);
+    ///
+    /// let mut iter = results.iter();
+    ///
+    /// assert_eq!(iter.next(), Some((&0, Ok(&"yes"))));
+    /// assert_eq!(iter.next(), Some((&2, Ok(&"no"))));
+    /// assert_eq!(iter.next(), Some((&1, Err(&"wrong"))));
+    /// assert_eq!(iter.next(), None);
+    /// ```
+    pub fn iter(&self) -> impl Iterator<Item = (&K, Result<&V, &E>)> {
+        self.ok_results
+            .iter()
+            .map(|(k, v)| (k, Ok(v)))
+            .chain(self.errors.iter().map(|(k, v)| (k, Err(v))))
+    }
 }
 
 /// An owning iterator over the entries of a [`MultiResults`],
@@ -393,14 +422,5 @@ impl<K, V, E> IntoIterator for MultiResults<K, V, E> {
             ok_results_iter: self.ok_results.into_iter(),
             errors_iter: self.errors.into_iter(),
         }
-    }
-}
-
-impl<K, V, E> MultiResults<K, V, E> {
-    fn iter(&self) -> impl Iterator<Item = (&K, Result<&V, &E>)> {
-        self.ok_results
-            .iter()
-            .map(|(k, v)| (k, Ok(v)))
-            .chain(self.errors.iter().map(|(k, v)| (k, Err(v))))
     }
 }
