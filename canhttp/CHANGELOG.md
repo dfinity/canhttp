@@ -11,6 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - An `iter` method to `canhttp::multi::MultiResults` returning a borrowing iterator.
 
+### Changed
+- The `canhttp` crate has been moved from the [`evm-rpc-canister`](https://github.com/dfinity/evm-rpc-canister) repository to the new [`canhttp`](https://github.com/dfinity/canhttp) repository.
+
 ## [0.2.0] - 2025-07-08
 
 ### Added
