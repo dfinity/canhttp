@@ -393,6 +393,8 @@ impl<'a, K, V, E> Iterator for Iter<'a, K, V, E> {
     }
 }
 
+impl<'a, K, V, E> FusedIterator for Iter<'a, K, V, E> {}
+
 /// An owning iterator over the entries of a [`MultiResults`],
 /// where the [`Ok`] results are given first (sorted by key) and then
 /// the [`Err`] results (also sorted by key).
