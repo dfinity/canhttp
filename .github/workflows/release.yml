@@ -1,15 +1,7 @@
 name: Release
 
 on:
-  pull_request:
-  merge_group:
-  push:
-    branches:
-      - main
-    tags:
-      - v*
-    paths-ignore:
-      - "README.md"
+  workflow_dispatch
 
 jobs:
   # Create a PR with the new versions and changelog, preparing the next release.
