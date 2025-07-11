@@ -369,7 +369,7 @@ impl<K: Ord, V, E> MultiResults<K, V, E> {
     }
 }
 
-/// An owning iterator over the entries of a [`MultiResults`],
+/// A borrowing iterator over the entries of a [`MultiResults`],
 /// where the [`Ok`] results are given first (sorted by key) and then
 /// the [`Err`] results (also sorted by key).
 ///
