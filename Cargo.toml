@@ -1,5 +1,5 @@
 [workspace]
-members = ["canhttp"]
+members = ["canhttp", "examples/http_canister"]
 resolver = "2"
 
 [workspace.package]
