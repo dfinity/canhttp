@@ -50,4 +50,12 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v4
       - name: 'Run unit tests'
-        run: cargo test --locked --workspace
+        run: cargo test --locked --workspace -exclude http_canister
+
+  integration-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Run unit tests'
+        run: cargo test --locked -p http_canister
