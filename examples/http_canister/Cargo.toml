@@ -6,3 +6,13 @@ edition.workspace = true
 [[bin]]
 name = "http_canister"
 path = "src/main.rs"
+
+[dependencies]
+candid = { workspace = true }
+canhttp = { path = "../../canhttp", features = ["http"] }
+ic-cdk = { workspace = true }
+
+[dev-dependencies]
+ic-management-canister-types = { workspace = true }
+ic-test-utilities-load-wasm = { workspace = true }
+pocket-ic = { workspace = true }
