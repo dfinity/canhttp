@@ -11,7 +11,7 @@ mod tests;
 
 use futures_channel::mpsc;
 use futures_util::StreamExt;
-use std::collections::{btree_map::IntoIter as BTreeMapIntoIter, BTreeMap};
+use std::collections::{btree_map, btree_map::IntoIter as BTreeMapIntoIter, BTreeMap};
 use std::fmt::Debug;
 use std::iter::FusedIterator;
 use tower::{Service, ServiceExt};
@@ -339,7 +339,7 @@ impl<K: Ord, V, E> MultiResults<K, V, E> {
         }
     }
 
-    /// Returns a borrowing iterator over the entries of a [`MultiResults`],
+    /// A borrowing iterator over the entries of a [`MultiResults`],
     /// where the [`Ok`] results are given first (sorted by key) and then
     /// the [`Err`] results (also sorted by key).
     ///
@@ -361,11 +361,35 @@ impl<K: Ord, V, E> MultiResults<K, V, E> {
     /// assert_eq!(iter.next(), Some((&1, Err(&"wrong"))));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> impl Iterator<Item = (&K, Result<&V, &E>)> {
-        self.ok_results
-            .iter()
+    pub fn iter(&self) -> Iter<K, V, E> {
+        Iter {
+            ok_results_iter: self.ok_results.iter(),
+            errors_iter: self.errors.iter(),
+        }
+    }
+}
+
+/// An owning iterator over the entries of a [`MultiResults`],
+/// where the [`Ok`] results are given first (sorted by key) and then
+/// the [`Err`] results (also sorted by key).
+///
+/// This `struct` is created by the [`iter`] method on [`MultiResults`].
+/// See its documentation for more.
+///
+/// [`iter`]: MultiResults::iter
+pub struct Iter<'a, K, V, E> {
+    ok_results_iter: btree_map::Iter<'a, K, V>,
+    errors_iter: btree_map::Iter<'a, K, E>,
+}
+
+impl<'a, K, V, E> Iterator for Iter<'a, K, V, E> {
+    type Item = (&'a K, Result<&'a V, &'a E>);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.ok_results_iter
+            .next()
             .map(|(k, v)| (k, Ok(v)))
-            .chain(self.errors.iter().map(|(k, v)| (k, Err(v))))
+            .or_else(|| self.errors_iter.next().map(|(k, e)| (k, Err(e))))
     }
 }
 
