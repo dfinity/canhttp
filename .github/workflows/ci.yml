@@ -57,5 +57,19 @@ jobs:
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
+
+      - name: 'Build http_canister'
+        run: |
+          cargo build -p http_canister --target wasm32-unknown-unknown --release --locked
+
+      - name: 'Set HTTP_CANISTER_WASM_PATH for load_wasm'
+        run: |
+          echo "HTTP_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/wasm32-unknown-unknown/release/http_canister.wasm" >> "$GITHUB_ENV"
+
+      - name: 'Install PocketIC server'
+        uses: dfinity/pocketic@main
+        with:
+          pocket-ic-server-version: "9.0.2"
+
       - name: 'Run integration tests'
         run: cargo test --locked -p http_canister
