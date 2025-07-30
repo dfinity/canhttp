@@ -11,7 +11,8 @@ pub use client::{
 };
 pub use convert::ConvertServiceBuilder;
 pub use cycles::{
-    CyclesAccounting, CyclesAccountingError, CyclesChargingPolicy, CyclesCostEstimator,
+    ChargingPolicy, CyclesAccounting, CyclesAccountingError, CyclesChargingPolicy,
+    CyclesCostEstimator,
 };
 
 mod client;

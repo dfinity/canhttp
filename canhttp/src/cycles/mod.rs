@@ -22,6 +22,25 @@ pub trait CyclesChargingPolicy {
     }
 }
 
+/// Concrete charging policies.
+#[derive(Clone)]
+pub enum ChargingPolicy {
+    /// No cycles will be charged to the user, meaning that the canister using that library will pay for HTTPs outcalls with its own cycles.
+    DontCharge,
+}
+
+impl CyclesChargingPolicy for ChargingPolicy {
+    fn cycles_to_charge(
+        &self,
+        _request: &CanisterHttpRequestArgument,
+        _attached_cycles: u128,
+    ) -> u128 {
+        match self {
+            ChargingPolicy::DontCharge => 0,
+        }
+    }
+}
+
 /// Estimate the exact minimum cycles amount required to send an HTTPs outcall as specified
 /// [here](https://internetcomputer.org/docs/current/developer-docs/gas-cost#https-outcalls).
 #[derive(Debug, Clone, Eq, PartialEq)]
