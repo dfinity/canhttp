@@ -10,9 +10,13 @@ path = "src/main.rs"
 [dependencies]
 candid = { workspace = true }
 canhttp = { path = "../../canhttp", features = ["http"] }
+http= { workspace = true }
 ic-cdk = { workspace = true }
+tower = { workspace = true }
+tower-layer = { workspace = true }
 
 [dev-dependencies]
 ic-management-canister-types = { workspace = true }
 ic-test-utilities-load-wasm = { workspace = true }
 pocket-ic = { workspace = true }
+serde= { workspace = true }

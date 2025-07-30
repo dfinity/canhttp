@@ -1,9 +1,11 @@
+use crate::convert::ConvertRequestLayer;
+use crate::cycles::ChargingPolicy;
 use crate::http::request::HttpRequestConversionError;
 use crate::http::response::{HttpResponse, HttpResponseConversionError};
 use crate::http::{HttpConversionLayer, HttpRequestConverter, HttpResponseConverter};
 use crate::{
-    ConvertServiceBuilder, IcError, MaxResponseBytesRequestExtension,
-    TransformContextRequestExtension,
+    Client, ConvertServiceBuilder, CyclesAccounting, CyclesChargingPolicy, IcError,
+    MaxResponseBytesRequestExtension, TransformContextRequestExtension,
 };
 use assert_matches::assert_matches;
 use candid::{Decode, Encode, Principal};

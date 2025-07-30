@@ -688,10 +688,14 @@ version = "1.0.0"
 dependencies = [
  "candid",
  "canhttp",
+ "http",
  "ic-cdk",
  "ic-management-canister-types",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
+ "serde",
+ "tower",
+ "tower-layer",
 ]
 
 [[package]]
