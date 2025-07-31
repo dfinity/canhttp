@@ -1,24 +1,129 @@
+//! Middleware to handle cycles accounting.
+//!
+//! Issuing HTTPs outcalls requires cycles, and this layer takes care of 2 things:
+//! 1. Estimate the number of cycles required for an HTTPs outcall.
+//! 2. Decide how the canister should charge for those cycles.
+//!
+//! # Examples
+//!
+//! To let the canister pay for HTTPs outcalls with its own cycle:
+//! ```rust
+//! use canhttp::{cycles::{ChargeMyself, CyclesAccountingServiceBuilder}, Client};
+//! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut service = ServiceBuilder::new()
+//!   .cycles_accounting(34, ChargeMyself::default())
+//!   .service(Client::new_with_box_error());
+//!
+//! let _ = service.ready().await.unwrap();
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! To charge the caller of the canister for the whole cost of the HTTPs outcall with an additional fix fee of 1M cycles:
+//! ```rust
+//! use canhttp::{cycles::{ChargeCaller, CyclesAccountingServiceBuilder}, Client};
+//! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut service = ServiceBuilder::new()
+//!   .cycles_accounting(34, ChargeCaller::new(|_request, cost| cost + 1_000_000))
+//!   .service(Client::new_with_box_error());
+//!
+//! let _ = service.ready().await.unwrap();
+//!
+//! # Ok(())
+//! # }
+//! ```
 #[cfg(test)]
 mod tests;
 
 use crate::client::IcHttpRequestWithCycles;
-use crate::convert::Convert;
+use crate::convert::{Convert, ConvertRequestLayer};
+use crate::ConvertServiceBuilder;
 use ic_cdk::api::management_canister::http_request::CanisterHttpRequestArgument;
+use std::convert::Infallible;
 use thiserror::Error;
+use tower::ServiceBuilder;
+use tower_layer::Stack;
 
-/// Estimate the amount of cycles to charge for a single HTTPs outcall.
+/// Charge cycles to pay for a single HTTPs outcall.
 pub trait CyclesChargingPolicy {
-    /// Determine the amount of cycles to charge the caller.
-    ///
-    /// If the value is `0`, no cycles will be charged, meaning that the canister using that library will
-    /// pay for HTTPs outcalls with its own cycles. Otherwise, the returned amount of cycles will be transferred
-    /// from the caller to the canister's cycles balance to pay (in part or fully) for the HTTPs outcall.
-    fn cycles_to_charge(
+    /// Type returned in case of a charging error.
+    type Error;
+
+    /// Charge cycles and return the charged amount.
+    fn charge_cycles(
+        &self,
+        request: &CanisterHttpRequestArgument,
+        request_cycles_cost: u128,
+    ) -> Result<u128, Self::Error>;
+}
+
+/// Canister using that library will pay for HTTPs outcalls with its own cycles.
+#[derive(Default, Clone)]
+pub struct ChargeMyself {}
+
+impl CyclesChargingPolicy for ChargeMyself {
+    type Error = Infallible;
+
+    fn charge_cycles(
         &self,
         _request: &CanisterHttpRequestArgument,
-        _attached_cycles: u128,
-    ) -> u128 {
-        0
+        _request_cycles_cost: u128,
+    ) -> Result<u128, Self::Error> {
+        // no-op,
+        Ok(0)
+    }
+}
+
+/// Cycles will be transferred from the caller of the canister using that library to pay for HTTPs outcalls.
+#[derive(Clone)]
+pub struct ChargeCaller<F> {
+    cycles_to_charge: F,
+}
+
+impl<F> ChargeCaller<F>
+where
+    F: Fn(&CanisterHttpRequestArgument, u128) -> u128,
+{
+    /// Create a new instance of [`ChargeCaller`].
+    pub fn new(cycles_to_charge: F) -> Self {
+        ChargeCaller { cycles_to_charge }
+    }
+}
+
+impl<F> CyclesChargingPolicy for ChargeCaller<F>
+where
+    F: Fn(&CanisterHttpRequestArgument, u128) -> u128,
+{
+    type Error = ChargeCallerError;
+
+    fn charge_cycles(
+        &self,
+        request: &CanisterHttpRequestArgument,
+        request_cycles_cost: u128,
+    ) -> Result<u128, Self::Error> {
+        let cycles_to_charge = (self.cycles_to_charge)(request, request_cycles_cost);
+        if cycles_to_charge > 0 {
+            let cycles_available = ic_cdk::api::call::msg_cycles_available128();
+            if cycles_available < cycles_to_charge {
+                return Err(ChargeCallerError::InsufficientCyclesError {
+                    expected: cycles_to_charge,
+                    received: cycles_available,
+                });
+            }
+            let cycles_received = ic_cdk::api::call::msg_cycles_accept128(cycles_to_charge);
+            assert_eq!(
+                cycles_received, cycles_to_charge,
+                "Expected to receive {cycles_to_charge}, but got {cycles_received}"
+            );
+        }
+        Ok(cycles_to_charge)
     }
 }
 
@@ -116,7 +221,7 @@ impl CyclesCostEstimator {
 
 /// Error return by the [`CyclesAccounting`] middleware.
 #[derive(Error, Clone, Debug, PartialEq, Eq)]
-pub enum CyclesAccountingError {
+pub enum ChargeCallerError {
     /// Error returned when the caller should be charged but did not attach sufficiently many cycles.
     #[error("insufficient cycles (expected {expected:?}, received {received:?})")]
     InsufficientCyclesError {
@@ -145,38 +250,46 @@ impl<Charging> CyclesAccounting<Charging> {
     }
 }
 
-impl<CyclesEstimator> Convert<CanisterHttpRequestArgument> for CyclesAccounting<CyclesEstimator>
+impl<Charging> Convert<CanisterHttpRequestArgument> for CyclesAccounting<Charging>
 where
-    CyclesEstimator: CyclesChargingPolicy,
+    Charging: CyclesChargingPolicy,
 {
     type Output = IcHttpRequestWithCycles;
-    type Error = CyclesAccountingError;
+    type Error = Charging::Error;
 
     fn try_convert(
         &mut self,
         request: CanisterHttpRequestArgument,
     ) -> Result<Self::Output, Self::Error> {
         let cycles_to_attach = self.cycles_cost_estimator.cost_of_http_request(&request);
-        let cycles_to_charge = self
-            .charging_policy
-            .cycles_to_charge(&request, cycles_to_attach);
-        if cycles_to_charge > 0 {
-            let cycles_available = ic_cdk::api::call::msg_cycles_available128();
-            if cycles_available < cycles_to_charge {
-                return Err(CyclesAccountingError::InsufficientCyclesError {
-                    expected: cycles_to_charge,
-                    received: cycles_available,
-                });
-            }
-            let cycles_received = ic_cdk::api::call::msg_cycles_accept128(cycles_to_charge);
-            assert_eq!(
-                cycles_received, cycles_to_charge,
-                "Expected to receive {cycles_to_charge}, but got {cycles_received}"
-            );
-        }
+        self.charging_policy
+            .charge_cycles(&request, cycles_to_attach)?;
         Ok(IcHttpRequestWithCycles {
             request,
             cycles: cycles_to_attach,
         })
+    }
+}
+
+/// Extension trait that adds methods to [`tower::ServiceBuilder`] for adding middleware
+/// related to cycles accounting
+pub trait CyclesAccountingServiceBuilder<L> {
+    /// Add cycles accounting.
+    ///
+    /// See the [module docs](crate::cycles) for examples.
+    fn cycles_accounting<C>(
+        self,
+        num_nodes_in_subnet: u32,
+        charging: C,
+    ) -> ServiceBuilder<Stack<ConvertRequestLayer<CyclesAccounting<C>>, L>>;
+}
+
+impl<L> CyclesAccountingServiceBuilder<L> for ServiceBuilder<L> {
+    fn cycles_accounting<C>(
+        self,
+        num_nodes_in_subnet: u32,
+        charging: C,
+    ) -> ServiceBuilder<Stack<ConvertRequestLayer<CyclesAccounting<C>>, L>> {
+        self.convert_request(CyclesAccounting::new(num_nodes_in_subnet, charging))
     }
 }
