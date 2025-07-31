@@ -1,11 +1,55 @@
+//! Middleware to handle cycles accounting.
+//!
+//! Issuing HTTPs outcalls requires cycles, and this layer takes care of 2 things:
+//! 1. Estimate the number of cycles required for an HTTPs outcall.
+//! 2. Decide how the canister should charge for those cycles.
+//!
+//! # Examples
+//!
+//! To let the canister pay for HTTPs outcalls with its own cycle:
+//! ```rust
+//! use canhttp::{cycles::{ChargeMyself, CyclesAccountingServiceBuilder}, Client};
+//! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut service = ServiceBuilder::new()
+//!   .cycles_accounting(34, ChargeMyself::default())
+//!   .service(Client::new_with_box_error());
+//!
+//! let _ = service.ready().await.unwrap();
+//!
+//! # Ok(())
+//! # }
+//! ```
+//!
+//! To charge the caller of the canister for the whole cost of the HTTPs outcall with an additional fix fee of 1M cycles:
+//! ```rust
+//! use canhttp::{cycles::{ChargeCaller, CyclesAccountingServiceBuilder}, Client};
+//! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
+//!
+//! # #[tokio::main]
+//! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+//! let mut service = ServiceBuilder::new()
+//!   .cycles_accounting(34, ChargeCaller::new(|_request, cost| cost + 1_000_000))
+//!   .service(Client::new_with_box_error());
+//!
+//! let _ = service.ready().await.unwrap();
+//!
+//! # Ok(())
+//! # }
+//! ```
 #[cfg(test)]
 mod tests;
 
 use crate::client::IcHttpRequestWithCycles;
-use crate::convert::Convert;
+use crate::convert::{Convert, ConvertRequestLayer};
+use crate::ConvertServiceBuilder;
 use ic_cdk::api::management_canister::http_request::CanisterHttpRequestArgument;
 use std::convert::Infallible;
 use thiserror::Error;
+use tower::ServiceBuilder;
+use tower_layer::Stack;
 
 /// Charge cycles to pay for a single HTTPs outcall.
 pub trait CyclesChargingPolicy {
@@ -21,6 +65,7 @@ pub trait CyclesChargingPolicy {
 }
 
 /// Canister using that library will pay for HTTPs outcalls with its own cycles.
+#[derive(Default, Clone)]
 pub struct ChargeMyself {}
 
 impl CyclesChargingPolicy for ChargeMyself {
@@ -37,8 +82,19 @@ impl CyclesChargingPolicy for ChargeMyself {
 }
 
 /// Cycles will be transferred from the caller of the canister using that library to pay for HTTPs outcalls.
+#[derive(Clone)]
 pub struct ChargeCaller<F> {
     cycles_to_charge: F,
+}
+
+impl<F> ChargeCaller<F>
+where
+    F: Fn(&CanisterHttpRequestArgument, u128) -> u128,
+{
+    /// New
+    pub fn new(cycles_to_charge: F) -> Self {
+        ChargeCaller { cycles_to_charge }
+    }
 }
 
 impl<F> CyclesChargingPolicy for ChargeCaller<F>
