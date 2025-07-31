@@ -1,4 +1,4 @@
-use crate::CyclesCostEstimator;
+use crate::cycles::CyclesCostEstimator;
 use ic_cdk::api::management_canister::http_request::CanisterHttpRequestArgument;
 
 #[test]
