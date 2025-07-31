@@ -195,3 +195,26 @@ where
         })
     }
 }
+
+/// Extension trait that adds methods to [`tower::ServiceBuilder`] for adding middleware
+/// related to cycles accounting
+pub trait CyclesAccountingServiceBuilder<L> {
+    /// Add cycles accounting.
+    ///
+    /// See the [module docs](crate::cycles) for examples.
+    fn cycles_accounting<C>(
+        self,
+        num_nodes_in_subnet: u32,
+        charging: C,
+    ) -> ServiceBuilder<Stack<ConvertRequestLayer<CyclesAccounting<C>>, L>>;
+}
+
+impl<L> CyclesAccountingServiceBuilder<L> for ServiceBuilder<L> {
+    fn cycles_accounting<C>(
+        self,
+        num_nodes_in_subnet: u32,
+        charging: C,
+    ) -> ServiceBuilder<Stack<ConvertRequestLayer<CyclesAccounting<C>>, L>> {
+        self.convert_request(CyclesAccounting::new(num_nodes_in_subnet, charging))
+    }
+}
