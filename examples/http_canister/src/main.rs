@@ -5,11 +5,6 @@ use ic_cdk::update;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
 #[update]
-pub async fn hello_world() -> String {
-    "Hello, World".to_string()
-}
-
-#[update]
 pub async fn make_http_post_request() -> String {
     let request = http::Request::post("https://httpbin.org/anything")
         .max_response_bytes(1_000)
