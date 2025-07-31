@@ -45,7 +45,7 @@ impl<F> CyclesChargingPolicy for ChargeCaller<F>
 where
     F: Fn(&CanisterHttpRequestArgument, u128) -> u128,
 {
-    type Error = CyclesAccountingError;
+    type Error = ChargeCallerError;
 
     fn charge_cycles(
         &self,
@@ -56,7 +56,7 @@ where
         if cycles_to_charge > 0 {
             let cycles_available = ic_cdk::api::call::msg_cycles_available128();
             if cycles_available < cycles_to_charge {
-                return Err(CyclesAccountingError::InsufficientCyclesError {
+                return Err(ChargeCallerError::InsufficientCyclesError {
                     expected: cycles_to_charge,
                     received: cycles_available,
                 });
@@ -146,7 +146,7 @@ impl CyclesCostEstimator {
 
 /// Error return by the [`CyclesAccounting`] middleware.
 #[derive(Error, Clone, Debug, PartialEq, Eq)]
-pub enum CyclesAccountingError {
+pub enum ChargeCallerError {
     /// Error returned when the caller should be charged but did not attach sufficiently many cycles.
     #[error("insufficient cycles (expected {expected:?}, received {received:?})")]
     InsufficientCyclesError {
