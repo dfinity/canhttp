@@ -11,7 +11,7 @@ pub use client::{
 };
 pub use convert::ConvertServiceBuilder;
 pub use cycles::{
-    ChargingPolicy, CyclesAccounting, CyclesAccountingError, CyclesChargingPolicy,
+    ChargeCaller, ChargeMyself, CyclesAccounting, CyclesAccountingError, CyclesChargingPolicy,
     CyclesCostEstimator,
 };
 
