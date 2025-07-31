@@ -1,8 +1,6 @@
+use canhttp::cycles::{ChargeMyself, CyclesAccountingServiceBuilder};
 use canhttp::http::HttpConversionLayer;
-use canhttp::{
-    ChargingPolicy, Client, ConvertServiceBuilder, CyclesAccounting,
-    MaxResponseBytesRequestExtension,
-};
+use canhttp::{Client, MaxResponseBytesRequestExtension};
 use ic_cdk::update;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
@@ -36,7 +34,7 @@ fn http_client(
 ) -> impl Service<http::Request<Vec<u8>>, Response = http::Response<Vec<u8>>, Error = BoxError> {
     ServiceBuilder::new()
         .layer(HttpConversionLayer)
-        .convert_request(CyclesAccounting::new(34, ChargingPolicy::DontCharge))
+        .cycles_accounting(34, ChargeMyself::default())
         .service(Client::new_with_box_error())
 }
 
