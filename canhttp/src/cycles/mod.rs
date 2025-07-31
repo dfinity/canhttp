@@ -91,7 +91,7 @@ impl<F> ChargeCaller<F>
 where
     F: Fn(&CanisterHttpRequestArgument, u128) -> u128,
 {
-    /// New
+    /// Create a new instance of [`ChargeCaller`].
     pub fn new(cycles_to_charge: F) -> Self {
         ChargeCaller { cycles_to_charge }
     }
