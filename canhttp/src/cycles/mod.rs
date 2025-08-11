@@ -24,7 +24,7 @@
 //! # }
 //! ```
 //!
-//! To charge the caller of the canister for the whole cost of the HTTPs outcall with an additional fix fee of 1M cycles:
+//! To charge the caller of the canister for the whole cost of the HTTPs outcall with an additional fixed fee of 1M cycles:
 //! ```rust
 //! use canhttp::{cycles::{ChargeCaller, CyclesAccountingServiceBuilder}, Client};
 //! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
@@ -65,7 +65,7 @@ pub trait CyclesChargingPolicy {
     ) -> Result<u128, Self::Error>;
 }
 
-/// Canister using that library will pay for HTTPs outcalls with its own cycles.
+/// The canister using that policy will pay for HTTPs outcalls with its own cycles.
 #[derive(Default, Clone)]
 pub struct ChargeMyself {}
 
@@ -201,7 +201,7 @@ impl CyclesCostEstimator {
     }
 }
 
-/// Error return by the [`CyclesAccounting`] middleware.
+/// Error returned by the [`CyclesAccounting`] middleware.
 #[derive(Error, Clone, Debug, PartialEq, Eq)]
 pub enum ChargeCallerError {
     /// Error returned when the caller should be charged but did not attach sufficiently many cycles.
