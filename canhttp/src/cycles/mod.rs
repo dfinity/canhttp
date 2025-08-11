@@ -1,8 +1,9 @@
 //! Middleware to handle cycles accounting.
 //!
-//! Issuing HTTPs outcalls requires cycles, and this layer takes care of 2 things:
-//! 1. Estimate the number of cycles required for an HTTPs outcall.
+//! Issuing HTTPs outcalls requires cycles, and this layer takes care of the following:
+//! 1. Estimate the number of cycles required.
 //! 2. Decide how the canister should charge for those cycles.
+//! 3. Do the actual charging.
 //!
 //! # Examples
 //!
