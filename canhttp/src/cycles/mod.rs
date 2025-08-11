@@ -217,14 +217,14 @@ pub enum ChargeCallerError {
 /// A middleware to handle cycles accounting, i.e. verify if sufficiently many cycles are available in a request.
 /// How cycles are estimated is given by `CyclesEstimator`
 #[derive(Clone, Debug)]
-pub struct CyclesAccounting<Charging> {
+pub struct CyclesAccounting<ChargingPolicy> {
     cycles_cost_estimator: CyclesCostEstimator,
-    charging_policy: Charging,
+    charging_policy: ChargingPolicy,
 }
 
-impl<Charging> CyclesAccounting<Charging> {
+impl<ChargingPolicy> CyclesAccounting<ChargingPolicy> {
     /// Create a new middleware given the cycles estimator.
-    pub fn new(num_nodes_in_subnet: u32, charging_policy: Charging) -> Self {
+    pub fn new(num_nodes_in_subnet: u32, charging_policy: ChargingPolicy) -> Self {
         Self {
             cycles_cost_estimator: CyclesCostEstimator::new(num_nodes_in_subnet),
             charging_policy,
@@ -232,12 +232,12 @@ impl<Charging> CyclesAccounting<Charging> {
     }
 }
 
-impl<Charging> Convert<CanisterHttpRequestArgument> for CyclesAccounting<Charging>
+impl<ChargingPolicy> Convert<CanisterHttpRequestArgument> for CyclesAccounting<ChargingPolicy>
 where
-    Charging: CyclesChargingPolicy,
+    ChargingPolicy: CyclesChargingPolicy,
 {
     type Output = IcHttpRequestWithCycles;
-    type Error = Charging::Error;
+    type Error = ChargingPolicy::Error;
 
     fn try_convert(
         &mut self,
