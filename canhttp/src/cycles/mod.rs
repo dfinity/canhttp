@@ -1,8 +1,9 @@
 //! Middleware to handle cycles accounting.
 //!
-//! Issuing HTTPs outcalls requires cycles, and this layer takes care of 2 things:
-//! 1. Estimate the number of cycles required for an HTTPs outcall.
+//! Issuing HTTPs outcalls requires cycles, and this layer takes care of the following:
+//! 1. Estimate the number of cycles required.
 //! 2. Decide how the canister should charge for those cycles.
+//! 3. Do the actual charging.
 //!
 //! # Examples
 //!
@@ -23,7 +24,7 @@
 //! # }
 //! ```
 //!
-//! To charge the caller of the canister for the whole cost of the HTTPs outcall with an additional fix fee of 1M cycles:
+//! To charge the caller of the canister for the whole cost of the HTTPs outcall with an additional fixed fee of 1M cycles:
 //! ```rust
 //! use canhttp::{cycles::{ChargeCaller, CyclesAccountingServiceBuilder}, Client};
 //! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
@@ -64,7 +65,7 @@ pub trait CyclesChargingPolicy {
     ) -> Result<u128, Self::Error>;
 }
 
-/// Canister using that library will pay for HTTPs outcalls with its own cycles.
+/// The canister using that policy will pay for HTTPs outcalls with its own cycles.
 #[derive(Default, Clone)]
 pub struct ChargeMyself {}
 
@@ -200,7 +201,7 @@ impl CyclesCostEstimator {
     }
 }
 
-/// Error return by the [`CyclesAccounting`] middleware.
+/// Error returned by the [`CyclesAccounting`] middleware.
 #[derive(Error, Clone, Debug, PartialEq, Eq)]
 pub enum ChargeCallerError {
     /// Error returned when the caller should be charged but did not attach sufficiently many cycles.
@@ -216,14 +217,14 @@ pub enum ChargeCallerError {
 /// A middleware to handle cycles accounting, i.e. verify if sufficiently many cycles are available in a request.
 /// How cycles are estimated is given by `CyclesEstimator`
 #[derive(Clone, Debug)]
-pub struct CyclesAccounting<Charging> {
+pub struct CyclesAccounting<ChargingPolicy> {
     cycles_cost_estimator: CyclesCostEstimator,
-    charging_policy: Charging,
+    charging_policy: ChargingPolicy,
 }
 
-impl<Charging> CyclesAccounting<Charging> {
+impl<ChargingPolicy> CyclesAccounting<ChargingPolicy> {
     /// Create a new middleware given the cycles estimator.
-    pub fn new(num_nodes_in_subnet: u32, charging_policy: Charging) -> Self {
+    pub fn new(num_nodes_in_subnet: u32, charging_policy: ChargingPolicy) -> Self {
         Self {
             cycles_cost_estimator: CyclesCostEstimator::new(num_nodes_in_subnet),
             charging_policy,
@@ -231,12 +232,12 @@ impl<Charging> CyclesAccounting<Charging> {
     }
 }
 
-impl<Charging> Convert<CanisterHttpRequestArgument> for CyclesAccounting<Charging>
+impl<ChargingPolicy> Convert<CanisterHttpRequestArgument> for CyclesAccounting<ChargingPolicy>
 where
-    Charging: CyclesChargingPolicy,
+    ChargingPolicy: CyclesChargingPolicy,
 {
     type Output = IcHttpRequestWithCycles;
-    type Error = Charging::Error;
+    type Error = ChargingPolicy::Error;
 
     fn try_convert(
         &mut self,
