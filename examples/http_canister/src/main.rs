@@ -1,3 +1,4 @@
+//! Example of a canister using `canhttp` to issue HTTP requests.
 use canhttp::cycles::{ChargeMyself, CyclesAccountingServiceBuilder};
 use canhttp::http::HttpConversionLayer;
 use canhttp::observability::ObservabilityLayer;
@@ -5,6 +6,7 @@ use canhttp::{Client, MaxResponseBytesRequestExtension};
 use ic_cdk::update;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
+/// Make an HTTP POST request.
 #[update]
 pub async fn make_http_post_request() -> String {
     let request = http::Request::post("https://httpbin.org/anything")
