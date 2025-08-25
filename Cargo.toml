@@ -32,7 +32,7 @@ serde_json = "1.0"
 sha2 = "0.10.8"
 strum = { version = "0.27.1", features = ["derive"] }
 thiserror = "2.0.12"
-tokio = "1.44.1"
+tokio = "1.47.1"
 tower = "0.5.2"
 tower-layer = "0.3.3"
 
