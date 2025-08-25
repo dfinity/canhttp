@@ -18,10 +18,10 @@ pub async fn make_http_post_request() -> String {
     let response = http_client()
         .ready()
         .await
-        .unwrap()
+        .expect("Client should be ready")
         .call(request)
         .await
-        .unwrap();
+        .expect("Request should succeed");
 
     assert_eq!(response.status(), http::StatusCode::OK);
 

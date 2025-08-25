@@ -26,10 +26,10 @@ let request = http::Request::post("https://httpbin.org/anything")
 let response = http_client()
     .ready()
     .await
-    .unwrap()
+    .expect("Client should be ready")
     .call(request)
     .await
-    .unwrap();
+    .expect("Request should succeed");
 ```
 
 Complete examples are available [here](examples) and see also the [Rust documentation](https://docs.rs/canhttp) for more details.
