@@ -7,7 +7,7 @@
 
 Library to make [HTTPs outcalls](https://internetcomputer.org/https-outcalls) from a canister on the Internet Computer, leveraging the modularity of the [tower framework](https://rust-lang.guide/guide/learn-async-rust/tower.html).
 
-## Basic usage
+## Usage
 
 Add this to your `Cargo.toml` (see [crates.io](https://crates.io/crates/canhttp) for the latest version):
 
@@ -48,3 +48,6 @@ Transforms a low-level service that transmits bytes into one that transmits JSON
 
 Make multiple calls in parallel and handle their multiple results.
 
+## License
+
+This project is licensed under the [Apache License 2.0](https://opensource.org/licenses/Apache-2.0).
