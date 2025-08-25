@@ -38,11 +38,11 @@ Complete examples are available [here](examples) and see also the [Rust document
 
 ### Feature `http`
 
-Transforms a low-level service that uses Candid types into one that uses types from the [http](https://crates.io/crates/http) crate.
+Offers middleware that transforms a low-level service that uses Candid types into one that uses types from the [http](https://crates.io/crates/http) crate.
 
 ### Feature `json`
 
-Transforms a low-level service that transmits bytes into one that transmits JSON payloads.
+Offers middleware that transforms a low-level service that transmits bytes into one that transmits JSON payloads.
 
 ### Feature `multi`
 
