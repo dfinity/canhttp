@@ -7,4 +7,37 @@
 
 Library to make [HTTPs outcalls](https://internetcomputer.org/https-outcalls) from a canister on the Internet Computer, leveraging the modularity of the [tower framework](https://rust-lang.guide/guide/learn-async-rust/tower.html).
 
+## Basic usage
+
+Add this to your `Cargo.toml` (see [crates.io](https://crates.io/crates/canhttp) for the latest version):
+
+```toml
+canhttp = "0.2.1"
+```
+
+Then, use the library to create an HTTP POST request, as follows:
+```rust
+let request = http::Request::post("https://httpbin.org/anything")
+    .max_response_bytes(1_000)
+    .header("X-Id", "42")
+    .body("Hello, World!".as_bytes().to_vec())
+    .unwrap();
+
+let response = http_client()
+    .ready()
+    .await
+    .unwrap()
+    .call(request)
+    .await
+    .unwrap();
+```
+
+Complete examples are available [here](examples).
+
+## Cargo Features
+
+### Feature `http`
+### Feature `json`
+### Feature `multi`
+
 See the [Rust documentation](https://docs.rs/canhttp) for more details.
