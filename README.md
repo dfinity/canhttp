@@ -32,12 +32,19 @@ let response = http_client()
     .unwrap();
 ```
 
-Complete examples are available [here](examples).
+Complete examples are available [here](examples) and see also the [Rust documentation](https://docs.rs/canhttp) for more details.
 
 ## Cargo Features
 
 ### Feature `http`
+
+Transforms a low-level service that uses Candid types into one that uses types from the [http](https://crates.io/crates/http) crate.
+
 ### Feature `json`
+
+Transforms a low-level service that transmits bytes into one that transmits JSON payloads.
+
 ### Feature `multi`
 
-See the [Rust documentation](https://docs.rs/canhttp) for more details.
+Make multiple calls in parallel and handle their multiple results.
+
