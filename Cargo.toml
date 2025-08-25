@@ -1,5 +1,5 @@
 [workspace]
-members = ["canhttp"]
+members = ["canhttp", "examples/http_canister"]
 resolver = "2"
 
 [workspace.package]
@@ -19,10 +19,13 @@ futures-util = "0.3.31"
 http = "1.3.1"
 ic-cdk = "0.17.2"
 ic-error-types = "0.2"
+ic-management-canister-types = "0.3.1"
+ic-test-utilities-load-wasm = { git = "https://github.com/dfinity/ic", tag = "release-2025-01-23_03-04-base" }
 itertools = "0.14.0"
 maplit = "1.0.2"
 num-traits = "0.2.19"
 pin-project = "1.1.10"
+pocket-ic = "9.0.2"
 proptest = "1.6.0"
 serde = "1.0"
 serde_json = "1.0"
@@ -32,3 +35,13 @@ thiserror = "2.0.12"
 tokio = "1.44.1"
 tower = "0.5.2"
 tower-layer = "0.3.3"
+
+[profile.release]
+debug = false
+lto = true
+strip = true
+opt-level = 's'
+
+# Required by `ic-test-utilities-load-wasm`
+[profile.canister-release]
+inherits = "release"
