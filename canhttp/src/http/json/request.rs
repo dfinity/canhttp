@@ -127,6 +127,11 @@ impl<T> JsonRpcRequest<T> {
         &self.method
     }
 
+    /// Change the JSON-RPC params following the builder pattern.
+    pub fn with_params(self, params: T) -> Self {
+        Self { params, ..self }
+    }
+
     /// Return the JSON-RPC params, if any.
     pub fn params(&self) -> Option<&T> {
         self.params.as_ref()
