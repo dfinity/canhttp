@@ -129,7 +129,7 @@ impl<T> JsonRpcRequest<T> {
 
     /// Change the JSON-RPC params following the builder pattern.
     pub fn with_params(self, params: T) -> Self {
-        Self { params, ..self }
+        Self { params: Some(params), ..self }
     }
 
     /// Return the JSON-RPC params, if any.
