@@ -1,6 +1,6 @@
-use crate::retry::DoubleMaxResponseBytes;
-use crate::{Client, HttpsOutcallError, IcError};
+use crate::{retry::DoubleMaxResponseBytes, Client, HttpsOutcallError};
 use tower::{ServiceBuilder, ServiceExt};
+use ic_cdk::call::Error as IcError;
 
 // Some middlewares like tower::retry need the underlying service to be cloneable.
 #[test]

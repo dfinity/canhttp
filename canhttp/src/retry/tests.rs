@@ -1,6 +1,6 @@
 use crate::http::HttpRequest;
 use crate::retry::DoubleMaxResponseBytes;
-use crate::{HttpsOutcallError, IcError, MaxResponseBytesRequestExtension};
+use crate::{HttpsOutcallError, MaxResponseBytesRequestExtension};
 use assert_matches::assert_matches;
 use ic_error_types::RejectCode;
 use std::future;
@@ -8,6 +8,7 @@ use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::task::{Context, Poll};
 use tower::{Service, ServiceBuilder, ServiceExt};
+use ic_cdk::call::Error as IcError;
 
 #[tokio::test]
 async fn should_retry_until_max() {
@@ -173,10 +174,10 @@ where
 }
 
 fn response_is_too_large_error() -> IcError {
-    let error = IcError {
-        code: RejectCode::SysFatal,
-        message: "Http body exceeds size limit".to_string(),
-    };
+    let error = IcError::CallRejected(ic_cdk::call::CallRejected::with_rejection(
+        RejectCode::SysFatal as u32,
+        "Http body exceeds size limit".to_string(),
+    ));
     assert!(error.is_response_too_large());
     error
 }

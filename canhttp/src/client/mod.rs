@@ -1,21 +1,21 @@
 #[cfg(test)]
 mod tests;
 
-use crate::convert::ConvertError;
-use crate::ConvertServiceBuilder;
-use ic_cdk::api::call::RejectionCode;
-use ic_cdk::api::management_canister::http_request::{
-    CanisterHttpRequestArgument as IcHttpRequest, HttpResponse as IcHttpResponse, TransformContext,
-};
+use crate::{convert::ConvertError, ConvertServiceBuilder};
+use ic_cdk::call::Error as IcError;
 use ic_error_types::RejectCode;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
-use thiserror::Error;
+use ic_management_canister_types::{
+    HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse, TransformContext,
+};
+use std::{
+    future::Future,
+    pin::Pin,
+    task::{Context, Poll},
+};
 use tower::{BoxError, Service, ServiceBuilder};
 
-/// Thin wrapper around [`ic_cdk::api::management_canister::http_request::http_request`]
-/// that implements the [`tower::Service`] trait. Its functionality can be extended by composing so-called
+/// Thin wrapper around [`ic_cdk::management_canister::http_request`] that implements the
+/// [`tower::Service`] trait. Its functionality can be extended by composing so-called
 /// [tower middlewares](https://docs.rs/tower/latest/tower/#usage).
 ///
 /// Middlewares from this crate:
@@ -34,23 +34,13 @@ impl Client {
             .service(Client)
     }
 
-    /// Creates a new client where error type is erased.
+    /// Creates a new client where the error type is erased.
     pub fn new_with_box_error() -> ConvertError<Client, BoxError> {
         Self::new_with_error::<BoxError>()
     }
 }
 
-/// Error returned by the Internet Computer when making an HTTPs outcall.
-#[derive(Error, Clone, Debug, PartialEq, Eq)]
-#[error("Error from ICP: (code {code:?}, message {message})")]
-pub struct IcError {
-    /// Rejection code as specified [here](https://internetcomputer.org/docs/current/references/ic-interface-spec#reject-codes)
-    pub code: RejectCode,
-    /// Associated helper message.
-    pub message: String,
-}
-
-impl Service<IcHttpRequestWithCycles> for Client {
+impl Service<IcHttpRequest> for Client {
     type Response = IcHttpResponse;
     type Error = IcError;
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
@@ -59,49 +49,14 @@ impl Service<IcHttpRequestWithCycles> for Client {
         Poll::Ready(Ok(()))
     }
 
-    fn call(
-        &mut self,
-        IcHttpRequestWithCycles { request, cycles }: IcHttpRequestWithCycles,
-    ) -> Self::Future {
-        use ic_cdk::api::call::RejectionCode as IcCdkRejectionCode;
-        fn convert_reject_code(code: IcCdkRejectionCode) -> RejectCode {
-            match code {
-                IcCdkRejectionCode::SysFatal => RejectCode::SysFatal,
-                IcCdkRejectionCode::SysTransient => RejectCode::SysTransient,
-                IcCdkRejectionCode::DestinationInvalid => RejectCode::DestinationInvalid,
-                IcCdkRejectionCode::CanisterReject => RejectCode::CanisterReject,
-                IcCdkRejectionCode::CanisterError => RejectCode::CanisterError,
-                IcCdkRejectionCode::Unknown => {
-                    // This can only happen if there is a new error code on ICP that the CDK is not aware of.
-                    // We map it to SysFatal since none of the other error codes apply.
-                    // In particular, note that RejectCode::SysUnknown is only applicable to inter-canister calls that used ic0.call_with_best_effort_response.
-                    RejectCode::SysFatal
-                }
-                RejectionCode::NoError => unreachable!("ic_cdk::api::management_canister::http_request::http_request should never produce a RejectionCode::NoError error")
-            }
-        }
-
+    fn call(&mut self, request: IcHttpRequest) -> Self::Future {
         Box::pin(async move {
-            match ic_cdk::api::management_canister::http_request::http_request(request, cycles)
-                .await
-            {
-                Ok((response,)) => Ok(response),
-                Err((code, message)) => Err(IcError {
-                    code: convert_reject_code(code),
-                    message,
-                }),
+            match ic_cdk::management_canister::http_request(&request).await {
+                Ok(response) => Ok(response),
+                Err(error) => Err(error),
             }
         })
     }
-}
-
-/// [`IcHttpRequest`] specifying how many cycles should be attached for the HTTPs outcall.
-#[derive(Clone, Debug, Default, PartialEq, Eq)]
-pub struct IcHttpRequestWithCycles {
-    /// Request to be made.
-    pub request: IcHttpRequest,
-    /// Number of cycles to attach.
-    pub cycles: u128,
 }
 
 /// Add support for max response bytes.
@@ -130,16 +85,6 @@ impl MaxResponseBytesRequestExtension for IcHttpRequest {
 
     fn get_max_response_bytes(&self) -> Option<u64> {
         self.max_response_bytes
-    }
-}
-
-impl MaxResponseBytesRequestExtension for IcHttpRequestWithCycles {
-    fn set_max_response_bytes(&mut self, value: u64) {
-        self.request.set_max_response_bytes(value);
-    }
-
-    fn get_max_response_bytes(&self) -> Option<u64> {
-        self.request.get_max_response_bytes()
     }
 }
 
@@ -172,16 +117,6 @@ impl TransformContextRequestExtension for IcHttpRequest {
     }
 }
 
-impl TransformContextRequestExtension for IcHttpRequestWithCycles {
-    fn set_transform_context(&mut self, value: TransformContext) {
-        self.request.set_transform_context(value);
-    }
-
-    fn get_transform_context(&self) -> Option<&TransformContext> {
-        self.request.get_transform_context()
-    }
-}
-
 /// Characterize errors that are specific to HTTPs outcalls.
 pub trait HttpsOutcallError {
     /// Determines whether the error indicates that the response was larger than the specified
@@ -193,8 +128,16 @@ pub trait HttpsOutcallError {
 
 impl HttpsOutcallError for IcError {
     fn is_response_too_large(&self) -> bool {
-        self.code == RejectCode::SysFatal
-            && (self.message.contains("size limit") || self.message.contains("length limit"))
+        match self {
+            IcError::CallRejected(call_rejected) => {
+                call_rejected.reject_code() == Ok(RejectCode::SysFatal)
+                    && (call_rejected.reject_message().contains("size limit")
+                        || call_rejected.reject_message().contains("length limit"))
+            }
+            IcError::CandidDecodeFailed(_)
+            | IcError::InsufficientLiquidCycleBalance(_)
+            | IcError::CallPerformFailed(_) => false,
+        }
     }
 }
 

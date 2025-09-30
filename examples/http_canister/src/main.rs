@@ -1,8 +1,10 @@
 //! Example of a canister using `canhttp` to issue HTTP requests.
-use canhttp::cycles::{ChargeMyself, CyclesAccountingServiceBuilder};
-use canhttp::http::HttpConversionLayer;
-use canhttp::observability::ObservabilityLayer;
-use canhttp::{Client, MaxResponseBytesRequestExtension};
+use canhttp::{
+    cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
+    http::HttpConversionLayer,
+    observability::ObservabilityLayer,
+    Client, MaxResponseBytesRequestExtension,
+};
 use ic_cdk::update;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
@@ -45,7 +47,7 @@ fn http_client(
         // Only deal with types from the http crate.
         .layer(HttpConversionLayer)
         // Use cycles from the canister to pay for HTTPs outcalls
-        .cycles_accounting(34, ChargeMyself::default())
+        .cycles_accounting(ChargeMyself::default())
         // The actual client
         .service(Client::new_with_box_error())
 }
