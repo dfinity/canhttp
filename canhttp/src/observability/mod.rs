@@ -15,8 +15,9 @@
 //! To add a basic observability layer, for example tracking the number of request and responses/errors inside a canister:
 //!
 //! ```rust
-//! use canhttp::{IcError, observability::ObservabilityLayer};
-//! use ic_cdk::api::management_canister::http_request::{CanisterHttpRequestArgument as IcHttpRequest, HttpResponse as IcHttpResponse};
+//! use canhttp::{observability::ObservabilityLayer};
+//! use ic_cdk::call::Error as IcError;
+//! use ic_management_canister_types::{HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse};
 //! use tower::{Service, ServiceBuilder, ServiceExt};
 //! use std::cell::RefCell;
 //!
@@ -75,8 +76,9 @@
 //!
 //! The previous example can be refined by extracting request data (such as the request URL) to observe the responses/errors:
 //! ```rust
-//! use canhttp::{IcError, observability::ObservabilityLayer};
-//! use ic_cdk::api::management_canister::http_request::{CanisterHttpRequestArgument as IcHttpRequest, HttpResponse as IcHttpResponse};
+//! use canhttp::{observability::ObservabilityLayer};
+//! use ic_cdk::call::Error as IcError;
+//! use ic_management_canister_types::{HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse};
 //! use maplit::btreemap;
 //! use tower::{Service, ServiceBuilder, ServiceExt};
 //! use std::cell::RefCell;
