@@ -4,8 +4,7 @@ use crate::{
         response::{HttpResponse, HttpResponseConversionError},
         HttpConversionLayer, HttpRequestConverter, HttpResponseConverter,
     },
-    ConvertServiceBuilder, MaxResponseBytesRequestExtension,
-    TransformContextRequestExtension,
+    ConvertServiceBuilder, MaxResponseBytesRequestExtension, TransformContextRequestExtension,
 };
 use assert_matches::assert_matches;
 use candid::{Decode, Encode, Principal};

@@ -2,13 +2,13 @@ use crate::http::HttpRequest;
 use crate::retry::DoubleMaxResponseBytes;
 use crate::{HttpsOutcallError, MaxResponseBytesRequestExtension};
 use assert_matches::assert_matches;
+use ic_cdk::call::Error as IcError;
 use ic_error_types::RejectCode;
 use std::future;
 use std::sync::mpsc;
 use std::sync::mpsc::Sender;
 use std::task::{Context, Poll};
 use tower::{Service, ServiceBuilder, ServiceExt};
-use ic_cdk::call::Error as IcError;
 
 #[tokio::test]
 async fn should_retry_until_max() {
