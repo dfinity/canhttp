@@ -2,7 +2,7 @@
 mod tests;
 
 use crate::{convert::ConvertError, ConvertServiceBuilder};
-use ic_cdk::call::Error as IcCdkError;
+use ic_cdk::call::Error as IcError;
 use ic_error_types::RejectCode;
 use ic_management_canister_types::{
     HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse, TransformContext,
@@ -12,7 +12,6 @@ use std::{
     pin::Pin,
     task::{Context, Poll},
 };
-use thiserror::Error;
 use tower::{BoxError, Service, ServiceBuilder};
 
 /// Thin wrapper around [`ic_cdk::management_canister::http_request`] that implements the
@@ -41,30 +40,6 @@ impl Client {
     }
 }
 
-/// Error returned by the Internet Computer when making an HTTPs outcall.
-#[derive(Error, Clone, Debug, PartialEq, Eq)]
-pub enum IcError {
-    /// The inter-canister call is rejected.
-    ///
-    /// Note that [`ic_cdk::call::Error::CallPerformFailed`] errors are also mapped to this variant
-    /// with an [`ic_error_types::RejectCode::SysFatal`] error code.
-    #[error("Error from ICP: (code {code:?}, message {message})")]
-    CallRejected {
-        /// Rejection code as specified [here](https://internetcomputer.org/docs/current/references/ic-interface-spec#reject-codes)
-        code: RejectCode,
-        /// Associated helper message.
-        message: String,
-    },
-    /// The liquid cycle balance is insufficient to perform the call.
-    #[error("Insufficient liquid cycles balance, available: {available}, required: {required}")]
-    InsufficientLiquidCycleBalance {
-        /// The liquid cycle balance available in the canister.
-        available: u128,
-        /// The required cycles to perform the call.
-        required: u128,
-    },
-}
-
 impl Service<IcHttpRequest> for Client {
     type Response = IcHttpResponse;
     type Error = IcError;
@@ -75,45 +50,11 @@ impl Service<IcHttpRequest> for Client {
     }
 
     fn call(&mut self, request: IcHttpRequest) -> Self::Future {
-        fn convert_error(error: IcCdkError) -> IcError {
-            match error {
-                IcCdkError::CallRejected(e) => {
-                    IcError::CallRejected {
-                        // `CallRejected::reject_code()` can only return an error result if there is a
-                        // new error code on ICP that the CDK is not aware of. We map it to `SysFatal`
-                        // since none of the other error codes apply.
-                        // In particular, note that `RejectCode::SysUnknown` is only applicable to
-                        // inter-canister calls that used `ic0.call_with_best_effort_response`.
-                        code: e.reject_code().unwrap_or(RejectCode::SysFatal),
-                        message: e.reject_message().to_string(),
-                    }
-                }
-                IcCdkError::CallPerformFailed(e) => {
-                    IcError::CallRejected {
-                        // This error indicates that the `ic0.call_perform` system API returned a non-zero code.
-                        // The only possible non-zero value (2) has the same semantics as `RejectCode::SysFatal`.
-                        code: RejectCode::SysFatal,
-                        message: e.to_string(),
-                    }
-                }
-                IcCdkError::InsufficientLiquidCycleBalance(e) => {
-                    IcError::InsufficientLiquidCycleBalance {
-                        available: e.available,
-                        required: e.required,
-                    }
-                }
-                IcCdkError::CandidDecodeFailed(e) => {
-                    // This can only happen if there is a bug in the CDK in the implementation
-                    // of `ic_cdk::management_canister::http_request`.
-                    panic!("Candid decode failed while performing HTTP outcall: {e}");
-                }
-            }
-        }
-
         Box::pin(async move {
-            ic_cdk::management_canister::http_request(&request)
-                .await
-                .map_err(convert_error)
+            match ic_cdk::management_canister::http_request(&request).await {
+                Ok(response) => Ok(response),
+                Err(error) => Err(error),
+            }
         })
     }
 }
@@ -188,11 +129,14 @@ pub trait HttpsOutcallError {
 impl HttpsOutcallError for IcError {
     fn is_response_too_large(&self) -> bool {
         match self {
-            IcError::CallRejected { code, message } => {
-                code == &RejectCode::SysFatal
-                    && (message.contains("size limit") || message.contains("length limit"))
+            IcError::CallRejected(call_rejected) => {
+                call_rejected.reject_code() == Ok(RejectCode::SysFatal)
+                    && (call_rejected.reject_message().contains("size limit")
+                        || call_rejected.reject_message().contains("length limit"))
             }
-            IcError::InsufficientLiquidCycleBalance { .. } => false,
+            IcError::CandidDecodeFailed(_)
+            | IcError::InsufficientLiquidCycleBalance(_)
+            | IcError::CallPerformFailed(_) => false,
         }
     }
 }
