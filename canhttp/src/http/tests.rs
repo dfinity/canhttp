@@ -4,12 +4,12 @@ use crate::{
         response::{HttpResponse, HttpResponseConversionError},
         HttpConversionLayer, HttpRequestConverter, HttpResponseConverter,
     },
-    ConvertServiceBuilder, MaxResponseBytesRequestExtension, TransformContextRequestExtension,
+    ConvertServiceBuilder, IcError, MaxResponseBytesRequestExtension,
+    TransformContextRequestExtension,
 };
 use assert_matches::assert_matches;
 use candid::{Decode, Encode, Principal};
 use http::StatusCode;
-use ic_cdk::call::Error as IcError;
 use ic_error_types::RejectCode;
 use ic_management_canister_types::{
     HttpHeader as IcHttpHeader, HttpMethod as IcHttpMethod, HttpRequestArgs as IcHttpRequest,
@@ -151,7 +151,13 @@ async fn should_fail_to_convert_http_response() {
     let error =
         expect_error::<_, IcError>(service.ready().await.unwrap().call(invalid_response).await);
 
-    assert_call_rejected(error, RejectCode::SysUnknown, "always error");
+    assert_eq!(
+        error,
+        IcError::CallRejected {
+            code: RejectCode::SysUnknown,
+            message: "always error".to_string(),
+        }
+    )
 }
 
 #[tokio::test]
@@ -222,12 +228,10 @@ async fn echo_response(response: IcHttpResponse) -> Result<IcHttpResponse, BoxEr
 }
 
 async fn always_error(_response: IcHttpResponse) -> Result<IcHttpResponse, BoxError> {
-    Err(BoxError::from(IcError::CallRejected(
-        ic_cdk::call::CallRejected::with_rejection(
-            RejectCode::SysUnknown as u32,
-            "always error".to_string(),
-        ),
-    )))
+    Err(BoxError::from(IcError::CallRejected {
+        code: RejectCode::SysUnknown,
+        message: "always error".to_string(),
+    }))
 }
 
 // http::Response<T> does not implement PartialEq
@@ -256,14 +260,4 @@ where
         .downcast_ref::<E>()
         .expect("BUG: unexpected error type")
         .clone()
-}
-
-fn assert_call_rejected(error: IcError, error_code: RejectCode, error_message: &str) {
-    match error {
-        IcError::CallRejected(call_reject) => {
-            assert_eq!(call_reject.reject_code(), Ok(error_code));
-            assert_eq!(call_reject.reject_message(), error_message);
-        }
-        _ => panic!("Unexpected error: {:?}", error),
-    }
 }
