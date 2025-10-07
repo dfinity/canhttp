@@ -56,6 +56,9 @@ pub trait CyclesChargingPolicy {
     /// Type returned in case of a charging error.
     type Error;
 
+    /// Return the number of cycles that would be charged for the given request
+    fn cycles_to_charge(&self, request: &HttpRequestArgs, request_cycles_cost: u128) -> u128;
+
     /// Charge cycles and return the charged amount.
     fn charge_cycles(
         &self,
@@ -70,6 +73,10 @@ pub struct ChargeMyself {}
 
 impl CyclesChargingPolicy for ChargeMyself {
     type Error = Infallible;
+
+    fn cycles_to_charge(&self, _request: &HttpRequestArgs, _request_cycles_cost: u128) -> u128 {
+        0
+    }
 
     fn charge_cycles(
         &self,
@@ -103,12 +110,16 @@ where
 {
     type Error = ChargeCallerError;
 
+    fn cycles_to_charge(&self, request: &HttpRequestArgs, request_cycles_cost: u128) -> u128 {
+        (self.cycles_to_charge)(request, request_cycles_cost)
+    }
+
     fn charge_cycles(
         &self,
         request: &HttpRequestArgs,
         request_cycles_cost: u128,
     ) -> Result<u128, Self::Error> {
-        let cycles_to_charge = (self.cycles_to_charge)(request, request_cycles_cost);
+        let cycles_to_charge = self.cycles_to_charge(request, request_cycles_cost);
         if cycles_to_charge > 0 {
             let cycles_available = ic_cdk::api::msg_cycles_available();
             if cycles_available < cycles_to_charge {
