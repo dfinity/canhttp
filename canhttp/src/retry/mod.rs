@@ -20,21 +20,25 @@ const HTTP_MAX_SIZE: u64 = 2_000_000;
 /// # Examples
 ///
 /// ```rust
-/// use tower::{Service, ServiceBuilder, ServiceExt};
-/// use canhttp::{Client, http::HttpRequest, HttpsOutcallError, IcError, MaxResponseBytesRequestExtension, retry::DoubleMaxResponseBytes};
+/// use canhttp::{
+///     Client, http::HttpRequest, HttpsOutcallError, IcError, MaxResponseBytesRequestExtension,
+///     retry::DoubleMaxResponseBytes
+/// };
 /// use ic_error_types::RejectCode;
+/// use tower::{Service, ServiceBuilder, ServiceExt};
 ///
 /// fn response_is_too_large_error() -> IcError {
-/// let error = IcError {
-///         code: RejectCode::SysFatal,
-///         message: "Http body exceeds size limit".to_string(),
-///     };
+///     let error = IcError::CallRejected {
+///        code: RejectCode::SysFatal,
+///        message: "Http body exceeds size limit".to_string(),
+///    };
 ///     assert!(error.is_response_too_large());
 ///     error
 /// }
 ///
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use assert_matches::assert_matches;
 /// let mut service = ServiceBuilder::new()
 /// .retry(DoubleMaxResponseBytes)
 /// .service_fn(|request: HttpRequest| async move {
@@ -52,7 +56,7 @@ const HTTP_MAX_SIZE: u64 = 2_000_000;
 /// // This will effectively do 4 calls with the following max_response_bytes values: 0, 2048, 4096, 8192.
 /// let response = service.ready().await?.call(request).await;
 ///
-/// assert_eq!(response, Ok(()));
+/// assert_matches!(response, Ok(()));
 /// # Ok(())
 /// # }
 /// ```

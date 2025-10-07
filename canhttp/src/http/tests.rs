@@ -1,19 +1,20 @@
-use crate::http::request::HttpRequestConversionError;
-use crate::http::response::{HttpResponse, HttpResponseConversionError};
-use crate::http::{HttpConversionLayer, HttpRequestConverter, HttpResponseConverter};
 use crate::{
+    http::{
+        request::HttpRequestConversionError,
+        response::{HttpResponse, HttpResponseConversionError},
+        HttpConversionLayer, HttpRequestConverter, HttpResponseConverter,
+    },
     ConvertServiceBuilder, IcError, MaxResponseBytesRequestExtension,
     TransformContextRequestExtension,
 };
 use assert_matches::assert_matches;
 use candid::{Decode, Encode, Principal};
 use http::StatusCode;
-use ic_cdk::api::management_canister::http_request::{
-    CanisterHttpRequestArgument as IcHttpRequest, HttpHeader as IcHttpHeader,
-    HttpMethod as IcHttpMethod, HttpResponse as IcHttpResponse,
-};
-use ic_cdk::api::management_canister::http_request::{TransformContext, TransformFunc};
 use ic_error_types::RejectCode;
+use ic_management_canister_types::{
+    HttpHeader as IcHttpHeader, HttpMethod as IcHttpMethod, HttpRequestArgs as IcHttpRequest,
+    HttpRequestResult as IcHttpResponse, TransformContext, TransformFunc,
+};
 use std::error::Error;
 use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
@@ -149,9 +150,10 @@ async fn should_fail_to_convert_http_response() {
         .service_fn(always_error);
     let error =
         expect_error::<_, IcError>(service.ready().await.unwrap().call(invalid_response).await);
+
     assert_eq!(
         error,
-        IcError {
+        IcError::CallRejected {
             code: RejectCode::SysUnknown,
             message: "always error".to_string(),
         }
@@ -226,7 +228,7 @@ async fn echo_response(response: IcHttpResponse) -> Result<IcHttpResponse, BoxEr
 }
 
 async fn always_error(_response: IcHttpResponse) -> Result<IcHttpResponse, BoxError> {
-    Err(BoxError::from(IcError {
+    Err(BoxError::from(IcError::CallRejected {
         code: RejectCode::SysUnknown,
         message: "always error".to_string(),
     }))
