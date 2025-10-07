@@ -92,6 +92,8 @@ impl Service<IcHttpRequest> for Client {
                     IcError::CallRejected {
                         // This error indicates that the `ic0.call_perform` system API returned a non-zero code.
                         // The only possible non-zero value (2) has the same semantics as `RejectCode::SysFatal`.
+                        // See the IC specifications here:
+                        // https://internetcomputer.org/docs/references/ic-interface-spec#system-api-call
                         code: RejectCode::SysFatal,
                         message: e.to_string(),
                     }
