@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Breaking:** Update `ic-cdk` to `v0.18.7` including several changes to align with the new HTTP outcall API. Notably: ([#21](https://github.com/dfinity/canhttp/pull/21))
   - `IcError` is refactored into an enum
   - Use of the new `HttpRequestArgs` and `HttpRequestResult` types in `CyclesChargingPolicy` and `Client` trait impls
-  - Removal of `IcHttpRequestWithCycles` and `CyclesCostEstimator`
+  - Removal of `IcHttpRequestWithCycles`, `CyclesCostEstimator`, `CyclesAccountingError` and `CyclesAccounting`
 
 [0.3.0]: https://github.com/dfinity/canhttp/compare/0.2.1..0.3.0
 
