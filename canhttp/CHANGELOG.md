@@ -17,7 +17,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Use of the new `HttpRequestArgs` and `HttpRequestResult` types in `CyclesChargingPolicy` and `Client` trait impls
   - Removal of `IcHttpRequestWithCycles`, `CyclesCostEstimator`, `CyclesAccountingError` and `CyclesAccounting` due to the `ic-cdk` method for making HTTP outcalls now taking care of charging cycles
 
-[0.3.0]: https://github.com/dfinity/canhttp/compare/0.2.1..0.3.0
+[0.3.0]: https://github.com/dfinity/canhttp/compare/canhttp-v0.2.1..canhttp-v0.3.0
 
 ## [0.2.1] - 2025-07-11
 
@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - The `canhttp` crate has been moved from the [`evm-rpc-canister`](https://github.com/dfinity/evm-rpc-canister) repository to the new [`canhttp`](https://github.com/dfinity/canhttp) repository.
 
+[0.2.1]: https://github.com/dfinity/canhttp/compare/canhttp-v0.2.0..canhttp-v0.2.1
+
 ## [0.2.0] - 2025-07-08
 
 ### Added
@@ -37,6 +39,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Breaking:** change the `code` field in the `IcError` type to use `ic_error_types::RejectCode` instead of `ic_cdk::api::call::RejectionCode` ([#428](https://github.com/dfinity/evm-rpc-canister/pull/428))
+
+[0.2.0]: https://github.com/dfinity/canhttp/compare/canhttp-v0.1.0..canhttp-v0.2.0
 
 ## [0.1.0] - 2025-06-04
 
@@ -50,3 +54,5 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - HTTP conversion layer ([#374](https://github.com/dfinity/evm-rpc-canister/pull/374))
 - Observability layer ([#370](https://github.com/dfinity/evm-rpc-canister/pull/370))
 - Library `canhttp` ([#364](https://github.com/dfinity/evm-rpc-canister/pull/364))
+
+[0.1.0]: https://github.com/dfinity/canhttp/releases/tag/canhttp-v0.1.0
