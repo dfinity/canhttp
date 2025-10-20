@@ -49,7 +49,7 @@ jobs:
           echo "release_version: $release_version"
           echo "RELEASE_VERSION=$release_version" >> "$GITHUB_ENV"
           
-          notes=$(parse-changelog canister/CHANGELOG.md "$release_version")
+          notes=$(parse-changelog canhttp/CHANGELOG.md "$release_version")
           
           CHANGELOG="$notes" envsubst < release_notes.md >> ${{ github.workspace }}-RELEASE.txt
 
