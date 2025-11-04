@@ -35,5 +35,10 @@ name = "canhttp"
 publish = true # enable `cargo publish`
 
 [[package]]
+name = "ic-canister-runtime"
+#git_release_enable = false # enable GitHub releases
+publish = true # enable `cargo publish`
+
+[[package]]
 name = "http_canister"
 release = false # don't process this package
