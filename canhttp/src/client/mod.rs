@@ -3,10 +3,10 @@ mod tests;
 
 use crate::{convert::ConvertError, ConvertServiceBuilder};
 use ic_cdk::call::Error as IcCdkError;
-use ic_error_types::RejectCode;
-use ic_management_canister_types::{
+use ic_cdk::management_canister::{
     HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse, TransformContext,
 };
+use ic_error_types::RejectCode;
 use std::{
     future::Future,
     pin::Pin,

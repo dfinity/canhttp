@@ -221,7 +221,6 @@ dependencies = [
  "http",
  "ic-cdk",
  "ic-error-types",
- "ic-management-canister-types",
  "itertools",
  "maplit",
  "num-traits",
@@ -734,7 +733,7 @@ dependencies = [
  "canhttp",
  "http",
  "ic-cdk",
- "ic-management-canister-types",
+ "ic-management-canister-types 0.3.3",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
  "serde",
@@ -814,16 +813,16 @@ dependencies = [
 
 [[package]]
 name = "ic-cdk"
-version = "0.18.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4efb278f5d3ef033b3eed7f01f1096eaf67701896aa5ef69f5eddf5a84833dc0"
+version = "0.19.0-beta.3"
+source = "git+https://github.com/dfinity/cdk-rs.git?rev=e1e611ea80d72f9836f910f7179b43685079ce15#e1e611ea80d72f9836f910f7179b43685079ce15"
 dependencies = [
  "candid",
  "ic-cdk-executor",
  "ic-cdk-macros",
  "ic-error-types",
- "ic-management-canister-types",
+ "ic-management-canister-types 0.4.1",
  "ic0",
+ "pin-project-lite",
  "serde",
  "serde_bytes",
  "slotmap",
@@ -832,19 +831,18 @@ dependencies = [
 
 [[package]]
 name = "ic-cdk-executor"
-version = "1.0.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "99f4ee8930fd2e491177e2eb7fff53ee1c407c13b9582bdc7d6920cf83109a2d"
+version = "2.0.0-beta.1"
+source = "git+https://github.com/dfinity/cdk-rs.git?rev=e1e611ea80d72f9836f910f7179b43685079ce15#e1e611ea80d72f9836f910f7179b43685079ce15"
 dependencies = [
  "ic0",
  "slotmap",
+ "smallvec",
 ]
 
 [[package]]
 name = "ic-cdk-macros"
-version = "0.18.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7eb14c5d691cc9d72bb95459b4761e3a4b3444b85a63d17555d5ddd782969a1e"
+version = "0.19.0-beta.3"
+source = "git+https://github.com/dfinity/cdk-rs.git?rev=e1e611ea80d72f9836f910f7179b43685079ce15#e1e611ea80d72f9836f910f7179b43685079ce15"
 dependencies = [
  "candid",
  "darling",
@@ -888,6 +886,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "ic-management-canister-types"
+version = "0.4.1"
+source = "git+https://github.com/dfinity/cdk-rs.git?rev=e1e611ea80d72f9836f910f7179b43685079ce15#e1e611ea80d72f9836f910f7179b43685079ce15"
+dependencies = [
+ "candid",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
 name = "ic-test-utilities-load-wasm"
 version = "0.9.0"
 source = "git+https://github.com/dfinity/ic?tag=release-2025-01-23_03-04-base#550209a750be0575cc4afff5e23c04b03048c08e"
@@ -917,8 +925,7 @@ dependencies = [
 [[package]]
 name = "ic0"
 version = "1.0.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1499d08fd5be8f790d477e1865d63bab6a8d748300e141270c4296e6d5fdd6bc"
+source = "git+https://github.com/dfinity/cdk-rs.git?rev=e1e611ea80d72f9836f910f7179b43685079ce15#e1e611ea80d72f9836f910f7179b43685079ce15"
 
 [[package]]
 name = "ic_principal"
@@ -1370,7 +1377,7 @@ dependencies = [
  "flate2",
  "hex",
  "ic-certification",
- "ic-management-canister-types",
+ "ic-management-canister-types 0.3.3",
  "ic-transport-types",
  "reqwest",
  "schemars",
