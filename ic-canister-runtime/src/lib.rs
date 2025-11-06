@@ -16,10 +16,9 @@ use thiserror::Error;
 #[cfg(feature = "wallet")]
 pub use wallet::CyclesWalletRuntime;
 
+mod stub;
 #[cfg(feature = "wallet")]
 mod wallet;
-
-mod stub;
 
 /// Abstract the canister runtime so that code making requests to canisters can be reused:
 /// * in production using [`ic_cdk`],
