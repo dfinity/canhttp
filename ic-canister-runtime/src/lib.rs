@@ -11,7 +11,10 @@ use candid::{utils::ArgumentEncoder, CandidType, Principal};
 use ic_cdk::call::{Call, CallFailed, CandidDecodeFailed};
 use ic_error_types::RejectCode;
 use serde::de::DeserializeOwned;
+pub use stub::StubRuntime;
 use thiserror::Error;
+
+mod stub;
 
 /// Abstract the canister runtime so that code making requests to canisters can be reused:
 /// * in production using [`ic_cdk`],
