@@ -11,12 +11,17 @@ include = ["src", "Cargo.toml", "CHANGELOG.md", "LICENSE", "README.md"]
 repository.workspace = true
 documentation = "https://docs.rs/ic-canister-runtime"
 
+[features]
+wallet = ["dep:regex-lite", "dep:serde_bytes"]
+
 [dependencies]
 async-trait = { workspace = true }
 candid = { workspace = true }
 ic-cdk = { workspace = true }
 ic-error-types = { workspace = true }
+regex-lite = { workspace = true, optional = true }
 serde = { workspace = true }
+serde_bytes = { workspace = true, optional = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]

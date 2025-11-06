@@ -12,6 +12,11 @@ use ic_cdk::call::{Call, CallFailed, CandidDecodeFailed};
 use ic_error_types::RejectCode;
 use serde::de::DeserializeOwned;
 use thiserror::Error;
+#[cfg(feature = "wallet")]
+pub use wallet::CyclesWalletRuntime;
+
+#[cfg(feature = "wallet")]
+mod wallet;
 
 /// Abstract the canister runtime so that code making requests to canisters can be reused:
 /// * in production using [`ic_cdk`],
