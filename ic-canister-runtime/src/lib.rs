@@ -13,6 +13,11 @@ use ic_error_types::RejectCode;
 use serde::de::DeserializeOwned;
 pub use stub::StubRuntime;
 use thiserror::Error;
+#[cfg(feature = "wallet")]
+pub use wallet::CyclesWalletRuntime;
+
+#[cfg(feature = "wallet")]
+mod wallet;
 
 mod stub;
 
