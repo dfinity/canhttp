@@ -18,7 +18,7 @@ readme = "README.md"
 [workspace.dependencies]
 assert_matches = "1.5.0"
 async-trait = "0.1.88"
-candid = { version = "0.10.13" }
+candid = { version = "0.10.20" }
 canhttp = { path = "canhttp" }
 ciborium = "0.2.2"
 futures-channel = "0.3.31"
