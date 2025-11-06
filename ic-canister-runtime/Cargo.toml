@@ -9,7 +9,7 @@ authors.workspace = true
 edition.workspace = true
 include = ["src", "Cargo.toml", "CHANGELOG.md", "LICENSE", "README.md"]
 repository.workspace = true
-documentation = "https://docs.rs/canruntime"
+documentation = "https://docs.rs/ic-canister-runtime"
 
 [dependencies]
 async-trait = { workspace = true }
