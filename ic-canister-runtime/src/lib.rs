@@ -110,8 +110,17 @@ impl From<CandidDecodeFailed> for IcError {
 }
 
 /// Runtime when interacting with a canister running on the Internet Computer.
-#[derive(Copy, Clone, Eq, PartialEq, Debug)]
-pub struct IcRuntime;
+#[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
+pub struct IcRuntime {
+    _private: (),
+}
+
+impl IcRuntime {
+    /// Create a new instance of [`IcRuntime`].
+    pub fn new() -> Self {
+        Self::default()
+    }
+}
 
 #[async_trait]
 impl Runtime for IcRuntime {
