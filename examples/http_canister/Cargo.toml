@@ -16,7 +16,7 @@ tower = { workspace = true }
 tower-layer = { workspace = true }
 
 [dev-dependencies]
-ic-management-canister-types = { workspace = true }
+ic-management-canister-types = "0.3.3"             # this version is required by pocket-ic v9
 ic-test-utilities-load-wasm = { workspace = true }
-pocket-ic = { workspace = true }
+pocket-ic = "9.0.2"
 serde = { workspace = true }

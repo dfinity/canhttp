@@ -10,11 +10,11 @@ use crate::{
 use assert_matches::assert_matches;
 use candid::{Decode, Encode, Principal};
 use http::StatusCode;
-use ic_error_types::RejectCode;
-use ic_management_canister_types::{
+use ic_cdk::management_canister::{
     HttpHeader as IcHttpHeader, HttpMethod as IcHttpMethod, HttpRequestArgs as IcHttpRequest,
     HttpRequestResult as IcHttpResponse, TransformContext, TransformFunc,
 };
+use ic_error_types::RejectCode;
 use std::error::Error;
 use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
@@ -59,6 +59,7 @@ async fn should_convert_http_request() {
                 }],
                 body: Some(body.clone()),
                 transform: Some(transform_context.clone()),
+                is_replicated: None,
             }
         )
     }
@@ -208,6 +209,7 @@ async fn should_convert_both_request_and_responses() {
             }],
             body: Some(body.clone()),
             transform: Some(transform_context.clone()),
+            is_replicated: None,
         }
     );
 

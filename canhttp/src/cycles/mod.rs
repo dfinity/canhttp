@@ -45,7 +45,7 @@ use crate::{
     convert::{ConvertRequestLayer, Filter},
     ConvertServiceBuilder,
 };
-use ic_management_canister_types::HttpRequestArgs;
+use ic_cdk::management_canister::HttpRequestArgs;
 use std::convert::Infallible;
 use thiserror::Error;
 use tower::ServiceBuilder;
