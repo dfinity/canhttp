@@ -1,5 +1,10 @@
 [workspace]
-members = ["canhttp", "examples/http_canister", "ic-canister-runtime"]
+members = [
+    "canhttp",
+    "examples/http_canister",
+    "ic-canister-runtime",
+    "ic-mock-http-canister-runtime",
+]
 resolver = "2"
 
 [workspace.package]
@@ -14,10 +19,12 @@ readme = "README.md"
 assert_matches = "1.5.0"
 async-trait = "0.1.88"
 candid = { version = "0.10.13" }
+canhttp = { path = "canhttp" }
 ciborium = "0.2.2"
 futures-channel = "0.3.31"
 futures-util = "0.3.31"
 http = "1.3.1"
+ic-canister-runtime = { path = "ic-canister-runtime" }
 ic-cdk = "0.18.7"
 ic-error-types = "0.2"
 ic-management-canister-types = "0.3.3"
@@ -38,6 +45,7 @@ thiserror = "2.0.12"
 tokio = "1.44.1"
 tower = "0.5.2"
 tower-layer = "0.3.3"
+url = "2.5.7"
 
 [profile.release]
 debug = false

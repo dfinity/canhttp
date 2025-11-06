@@ -1,0 +1,26 @@
+[package]
+name = "ic-mock-http-canister-runtime"
+version = "0.1.0"
+description = "Mock HTTP outcalls with Pocket IC"
+license.workspace = true
+readme.workspace = true
+homepage.workspace = true
+authors.workspace = true
+edition.workspace = true
+include = ["src", "Cargo.toml", "CHANGELOG.md", "LICENSE", "README.md"]
+repository.workspace = true
+documentation = "https://docs.rs/ic-mock-http-canister-runtime"
+
+[dependencies]
+async-trait = { workspace = true }
+candid = { workspace = true }
+canhttp = { workspace = true, features = ["json", "http"] }
+ic-canister-runtime = { workspace = true }
+ic-cdk = { workspace = true }
+ic-error-types = { workspace = true }
+pocket-ic = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+url = { workspace = true }
+
+[dev-dependencies]
