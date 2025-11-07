@@ -25,3 +25,4 @@ serde_bytes = { workspace = true, optional = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+tokio = { workspace = true, features = ["full"] }
