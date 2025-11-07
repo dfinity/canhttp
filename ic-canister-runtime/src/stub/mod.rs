@@ -9,6 +9,42 @@ use std::{collections::VecDeque, sync::Mutex};
 
 /// An implementation of [`Runtime`] that returns pre-defined results from a queue.
 /// This runtime is primarily intended for testing purposes.
+///
+/// # Examples
+///
+/// ```rust
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use candid::Principal;
+/// use ic_canister_runtime::{IcError, Runtime, StubRuntime};
+///
+/// const PRINCIPAL: Principal = Principal::from_slice(&[0x9d, 0xf7, 0x01]);
+/// const METHOD: &str = "method";
+/// const ARGS: (&str,) = ("args",);
+///
+/// let runtime = StubRuntime::new()
+///     .add_stub_response(1_u64)
+///     .add_stub_response("two")
+///     .add_stub_response(Some(3_u128));
+///
+/// let result_1: Result<u64, IcError> = runtime
+///     .update_call(PRINCIPAL, METHOD, ARGS, 0)
+///     .await;
+/// assert_eq!(result_1, Ok(1_u64));
+///
+/// let result_2: Result<String, IcError> = runtime
+///     .query_call(PRINCIPAL, METHOD, ARGS)
+///     .await;
+/// assert_eq!(result_2, Ok("two".to_string()));
+///
+/// let result_3: Result<Option<u128>, IcError> = runtime
+///     .update_call(PRINCIPAL, METHOD, ARGS, 0)
+///     .await;
+/// assert_eq!(result_3, Ok(Some
+/// (3_u128)));
+/// # Ok(())
+/// # }
+/// ```
 #[derive(Debug, Default)]
 pub struct StubRuntime {
     // Use a mutex so that this struct is Send and Sync
