@@ -1,5 +1,5 @@
-//! Library to mock HTTP outcalls on the Internet Computer leveraging the [`ic_canister_runtime`] crate's
-//! [`Runtime`] trait as well as [`PocketIc`].
+//! Library to mock HTTP outcalls on the Internet Computer leveraging the [`ic_canister_runtime`]
+//! crate's [`Runtime`] trait as well as [`PocketIc`].
 
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
@@ -13,8 +13,8 @@ use ic_cdk::call::{CallFailed, CallRejected};
 use ic_error_types::RejectCode;
 pub use mock::{
     json::{JsonRpcRequestMatcher, JsonRpcResponse},
-    CanisterHttpReject, CanisterHttpReply, CanisterHttpRequestMatcher, MockHttpOutcall,
-    MockHttpOutcallBuilder, MockHttpOutcalls, MockHttpOutcallsBuilder,
+    AnyCanisterHttpRequestMatcher, CanisterHttpReject, CanisterHttpReply, CanisterHttpRequestMatcher,
+    MockHttpOutcall, MockHttpOutcallBuilder, MockHttpOutcalls, MockHttpOutcallsBuilder,
 };
 use pocket_ic::{
     common::rest::{CanisterHttpRequest, CanisterHttpResponse, MockCanisterHttpResponse},
@@ -34,6 +34,45 @@ const MAX_TICKS: usize = 10;
 ///
 /// This runtime allows making calls to canisters through Pocket IC while verifying the HTTP
 /// outcalls made and mocking their responses.
+///
+/// # Examples
+/// Call the `make_http_post_request` endpoint on the example [`http_canister`] deployed with
+/// Pocket IC and mock the resulting HTTP outcall.
+/// ```rust, no_run
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use ic_mock_http_canister_runtime::{
+///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
+///     MockHttpRuntime
+/// };
+/// # use candid::Principal;
+/// # use ic_canister_runtime::{Runtime, StubRuntime};
+/// # use pocket_ic::nonblocking::PocketIc;
+/// # use std::{sync::Arc, mem::MaybeUninit};
+///
+/// # let pocket_ic: Arc<PocketIc> = unsafe { Arc::new(unsafe { MaybeUninit::zeroed().assume_init() }) };
+/// let mocks = MockHttpOutcallsBuilder::new()
+///     .given(AnyCanisterHttpRequestMatcher)
+///     .respond_with(
+///         CanisterHttpReply::with_status(200)
+///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
+///     );
+///
+/// let runtime = MockHttpRuntime::new(pocket_ic, Principal::anonymous(), mocks);
+/// # let canister_id = Principal::anonymous();
+///
+/// let http_request_result: String = runtime
+///     .update_call(canister_id, "make_http_post_request", (), 0)
+///     .await
+///     .expect("Call to `http_canister` failed");
+///
+/// assert!(http_request_result.contains("Hello, World!"));
+/// assert!(http_request_result.contains("\"X-Id\": \"42\""));
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`http_canister`]: https://github.com/dfinity/canhttp/tree/main/examples/http_canister/
 pub struct MockHttpRuntime {
     env: Arc<PocketIc>,
     caller: Principal,
@@ -45,7 +84,7 @@ impl MockHttpRuntime {
     /// All calls to canisters are made using the given caller identity.
     pub fn new(env: Arc<PocketIc>, caller: Principal, mocks: impl Into<MockHttpOutcalls>) -> Self {
         Self {
-            env: env.clone(),
+            env,
             caller,
             mocks: Mutex::new(mocks.into()),
         }
