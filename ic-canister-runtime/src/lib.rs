@@ -13,12 +13,12 @@ use candid::{utils::ArgumentEncoder, CandidType, Principal};
 use ic_cdk::call::{Call, CallFailed, CandidDecodeFailed};
 use ic_error_types::RejectCode;
 use serde::de::DeserializeOwned;
+pub use stub::StubRuntime;
 use thiserror::Error;
 #[cfg(feature = "wallet")]
 pub use wallet::CyclesWalletRuntime;
 
-#[cfg(feature = "agent")]
-mod agent;
+mod stub;
 #[cfg(feature = "wallet")]
 mod wallet;
 
