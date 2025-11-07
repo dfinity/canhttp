@@ -13,8 +13,9 @@ use ic_cdk::call::{CallFailed, CallRejected};
 use ic_error_types::RejectCode;
 pub use mock::{
     json::{JsonRpcRequestMatcher, JsonRpcResponse},
-    AnyCanisterHttpRequestMatcher, CanisterHttpReject, CanisterHttpReply, CanisterHttpRequestMatcher,
-    MockHttpOutcall, MockHttpOutcallBuilder, MockHttpOutcalls, MockHttpOutcallsBuilder,
+    AnyCanisterHttpRequestMatcher, CanisterHttpReject, CanisterHttpReply,
+    CanisterHttpRequestMatcher, MockHttpOutcall, MockHttpOutcallBuilder, MockHttpOutcalls,
+    MockHttpOutcallsBuilder,
 };
 use pocket_ic::{
     common::rest::{CanisterHttpRequest, CanisterHttpResponse, MockCanisterHttpResponse},
@@ -46,9 +47,9 @@ const MAX_TICKS: usize = 10;
 ///     MockHttpRuntime
 /// };
 /// # use candid::Principal;
-/// # use ic_canister_runtime::{Runtime, StubRuntime};
+/// # use ic_canister_runtime::Runtime;
 /// # use pocket_ic::nonblocking::PocketIc;
-/// # use std::{sync::Arc, mem::MaybeUninit};
+/// # use std::{mem::MaybeUninit, sync::Arc};
 ///
 /// # let pocket_ic: Arc<PocketIc> = unsafe { Arc::new(unsafe { MaybeUninit::zeroed().assume_init() }) };
 /// let mocks = MockHttpOutcallsBuilder::new()
