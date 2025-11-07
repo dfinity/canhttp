@@ -3,7 +3,7 @@
 [![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg?logo=apache&style=for-the-badge)](LICENSE)
 
 
-# `ic-mock-http-canister-runtime`
+# `ic-canister-runtime`
 
 Library to abstract the canister runtime so that code making requests to canisters can be reused, e.g.:
 * in production using [`ic_cdk`](https://crates.io/crates/ic-cdk),
