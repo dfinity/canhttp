@@ -17,9 +17,9 @@ ciborium = "0.2.2"
 futures-channel = "0.3.31"
 futures-util = "0.3.31"
 http = "1.3.1"
-ic-cdk = { git = "https://github.com/dfinity/cdk-rs.git", rev = "d547693ec4ee03b149f82abe8c8292b166b90054" }                       # branch spofford/concurrent-closures
+ic-cdk = { git = "https://github.com/dfinity/cdk-rs.git", rev = "c7429aa05bb6b035f1bc8267bbef3316742a8fb1" }                       # branch spofford/concurrent-closures
 ic-error-types = "0.2"
-ic-management-canister-types = { git = "https://github.com/dfinity/cdk-rs.git", rev = "d547693ec4ee03b149f82abe8c8292b166b90054" } # branch spofford/concurrent-closures
+ic-management-canister-types = { git = "https://github.com/dfinity/cdk-rs.git", rev = "c7429aa05bb6b035f1bc8267bbef3316742a8fb1" } # branch spofford/concurrent-closures
 ic-test-utilities-load-wasm = { git = "https://github.com/dfinity/ic", tag = "release-2025-01-23_03-04-base" }
 itertools = "0.14.0"
 maplit = "1.0.2"
