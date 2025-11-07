@@ -1191,12 +1191,24 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-canister-runtime"
+name = "ic-agent-canister-runtime"
 version = "0.1.0"
 dependencies = [
  "async-trait",
  "candid",
  "ic-agent",
+ "ic-canister-runtime",
+ "ic-error-types",
+ "serde",
+ "tokio",
+]
+
+[[package]]
+name = "ic-canister-runtime"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "candid",
  "ic-cdk",
  "ic-error-types",
  "regex-lite",

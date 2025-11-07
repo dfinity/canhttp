@@ -6,8 +6,6 @@
 #![forbid(unsafe_code)]
 #![forbid(missing_docs)]
 
-#[cfg(feature = "agent")]
-pub use agent::AgentRuntime;
 use async_trait::async_trait;
 use candid::{utils::ArgumentEncoder, CandidType, Principal};
 use ic_cdk::call::{Call, CallFailed, CandidDecodeFailed};
