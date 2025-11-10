@@ -23,43 +23,37 @@ use pocket_ic::{
     RejectResponse,
 };
 use serde::de::DeserializeOwned;
-use std::{
-    sync::{Arc, Mutex},
-    time::Duration,
-};
+use std::time::Duration;
 
 const DEFAULT_MAX_RESPONSE_BYTES: u64 = 2_000_000;
 const MAX_TICKS: usize = 10;
 
-/// [`Runtime`] using [`PocketIc`] to mock HTTP outcalls.
-///
-/// This runtime allows making calls to canisters through Pocket IC while verifying the HTTP
-/// outcalls made and mocking their responses.
+#[derive(Default)]
+enum PocketIcMode {
+    Live,
+    #[default]
+    NotLive,
+}
+
+/// [`Runtime`] using [`PocketIc`] to make calls to canisters.
 ///
 /// # Examples
 /// Call the `make_http_post_request` endpoint on the example [`http_canister`] deployed with
-/// Pocket IC and mock the resulting HTTP outcall.
+/// Pocket IC.
 /// ```rust, no_run
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use ic_mock_http_canister_runtime::{
+/// use ic_pocket_canister_runtime::{
 ///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
-///     MockHttpRuntime
+///     PocketIcRuntime
 /// };
 /// # use candid::Principal;
 /// # use ic_canister_runtime::Runtime;
 /// # use pocket_ic::nonblocking::PocketIc;
-/// # use std::{mem::MaybeUninit, sync::Arc};
+/// # use std::mem::MaybeUninit;
 ///
-/// # let pocket_ic: Arc<PocketIc> = unsafe { Arc::new(unsafe { MaybeUninit::zeroed().assume_init() }) };
-/// let mocks = MockHttpOutcallsBuilder::new()
-///     .given(AnyCanisterHttpRequestMatcher)
-///     .respond_with(
-///         CanisterHttpReply::with_status(200)
-///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
-///     );
-///
-/// let runtime = MockHttpRuntime::new(pocket_ic, Principal::anonymous(), mocks);
+/// # let pocket_ic: PocketIc = unsafe { MaybeUninit::zeroed().assume_init() };
+/// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous());
 /// # let canister_id = Principal::anonymous();
 ///
 /// let http_request_result: String = runtime
@@ -74,26 +68,88 @@ const MAX_TICKS: usize = 10;
 /// ```
 ///
 /// [`http_canister`]: https://github.com/dfinity/canhttp/tree/main/examples/http_canister/
-pub struct MockHttpRuntime {
-    env: Arc<PocketIc>,
+pub struct PocketIcRuntime<'a> {
+    env: &'a PocketIc,
     caller: Principal,
-    mocks: Mutex<MockHttpOutcalls>,
+    mocks: Option<Box<dyn ExecuteHttpOutcallMocks>>,
+    mode: PocketIcMode,
 }
 
-impl MockHttpRuntime {
-    /// Create a new [`MockHttpRuntime`] with the given [`PocketIc`] and [`MockHttpOutcalls`].
+impl<'a> PocketIcRuntime<'a> {
+    /// Create a new [`PocketIcRuntime`] with the given [`PocketIc`].
     /// All calls to canisters are made using the given caller identity.
-    pub fn new(env: Arc<PocketIc>, caller: Principal, mocks: impl Into<MockHttpOutcalls>) -> Self {
+    pub fn new(env: &'a PocketIc, caller: Principal) -> Self {
         Self {
             env,
             caller,
-            mocks: Mutex::new(mocks.into()),
+            mocks: None,
+            mode: Default::default(),
         }
+    }
+
+    /// Mock HTTP outcalls and their responses.
+    ///
+    /// This allows making calls to canisters through Pocket IC while verifying the HTTP outcalls
+    /// made and mocking their responses.
+    ///
+    /// # Examples
+    /// Call the `make_http_post_request` endpoint on the example [`http_canister`] deployed with
+    /// Pocket IC and mock the resulting HTTP outcall.
+    /// ```rust, no_run
+    /// # #[tokio::main]
+    /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use ic_pocket_canister_runtime::{
+    ///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
+    ///     PocketIcRuntime
+    /// };
+    /// # use candid::Principal;
+    /// # use ic_canister_runtime::Runtime;
+    /// # use pocket_ic::nonblocking::PocketIc;
+    /// # use std::mem::MaybeUninit;
+    ///
+    /// # let pocket_ic: PocketIc = unsafe { MaybeUninit::zeroed().assume_init() };
+    /// let mocks = MockHttpOutcallsBuilder::new()
+    ///     // Matches any HTTP outcall request
+    ///     .given(AnyCanisterHttpRequestMatcher)
+    ///     // Assert that the HTTP outcall response has the given status code and body
+    ///     .respond_with(
+    ///         CanisterHttpReply::with_status(200)
+    ///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
+    ///     );
+    ///
+    /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
+    ///     .with_http_mocks(mocks.build());
+    /// # let canister_id = Principal::anonymous();
+    ///
+    /// let http_request_result: String = runtime
+    ///     .update_call(canister_id, "make_http_post_request", (), 0)
+    ///     .await
+    ///     .expect("Call to `http_canister` failed");
+    ///
+    /// assert!(http_request_result.contains("Hello, World!"));
+    /// assert!(http_request_result.contains("\"X-Id\": \"42\""));
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// [`http_canister`]: https://github.com/dfinity/canhttp/tree/main/examples/http_canister/
+    pub fn with_http_mocks(mut self, mocks: impl ExecuteHttpOutcallMocks + 'static) -> Self {
+        self.mocks = Some(Box::new(mocks));
+        self
+    }
+
+    /// Use Pocket IC in [live mode](https://github.com/dfinity/ic/blob/f0c82237ae16745ac54dd3838b3f91ce32a6bc52/packages/pocket-ic/HOWTO.md?plain=1#L43).
+    ///
+    /// The pocket IC instance will automatically progress and execute HTTPs outcalls.
+    /// This setting renders the tests non-deterministic.
+    pub fn live_mode(mut self) -> Self {
+        self.mode = PocketIcMode::Live;
+        self
     }
 }
 
 #[async_trait]
-impl Runtime for MockHttpRuntime {
+impl Runtime for PocketIcRuntime<'_> {
     async fn update_call<In, Out>(
         &self,
         id: Principal,
@@ -114,13 +170,16 @@ impl Runtime for MockHttpRuntime {
                 encode_args(args).unwrap_or_else(panic_when_encode_fails),
             )
             .await
-            .unwrap();
-        self.execute_mocks().await;
-        self.env
-            .await_call(message_id)
-            .await
-            .map(decode_call_response)
-            .map_err(parse_reject_response)?
+            .map_err(parse_reject_response)?;
+        if let Some(mock) = &self.mocks {
+            mock.execute_http_outcall_mocks(self.env).await;
+        }
+        (match self.mode {
+            PocketIcMode::NotLive => self.env.await_call(message_id).await,
+            PocketIcMode::Live => self.env.await_call_no_ticks(message_id).await,
+        })
+        .map(decode_call_response)
+        .map_err(parse_reject_response)?
     }
 
     async fn query_call<In, Out>(
@@ -146,15 +205,20 @@ impl Runtime for MockHttpRuntime {
     }
 }
 
-impl MockHttpRuntime {
-    async fn execute_mocks(&self) {
+/// Execute HTTP outcall mocks.
+#[async_trait]
+pub trait ExecuteHttpOutcallMocks: Send + Sync {
+    /// Execute HTTP outcall mocks.
+    async fn execute_http_outcall_mocks(&self, runtime: &PocketIc) -> ();
+}
+
+#[async_trait]
+impl ExecuteHttpOutcallMocks for MockHttpOutcalls {
+    async fn execute_http_outcall_mocks(&self, env: &PocketIc) -> () {
         loop {
-            let pending_requests = tick_until_http_requests(self.env.as_ref()).await;
+            let pending_requests = tick_until_http_requests(env).await;
             if let Some(request) = pending_requests.first() {
-                let maybe_mock = {
-                    let mut mocks = self.mocks.lock().unwrap();
-                    mocks.pop_matching(request)
-                };
+                let maybe_mock = { self.pop_matching(request) };
                 match maybe_mock {
                     Some(mock) => {
                         let mock_response = MockCanisterHttpResponse {
@@ -163,7 +227,7 @@ impl MockHttpRuntime {
                             response: check_response_size(request, mock.response),
                             additional_responses: vec![],
                         };
-                        self.env.mock_canister_http_response(mock_response).await;
+                        env.mock_canister_http_response(mock_response).await;
                     }
                     None => {
                         panic!("No mocks matching the request: {:?}", request);

@@ -3,7 +3,7 @@ members = [
     "canhttp",
     "examples/http_canister",
     "ic-canister-runtime",
-    "ic-mock-http-canister-runtime",
+    "ic-pocket-canister-runtime",
 ]
 resolver = "2"
 
@@ -32,6 +32,7 @@ ic-test-utilities-load-wasm = { git = "https://github.com/dfinity/ic", tag = "re
 itertools = "0.14.0"
 maplit = "1.0.2"
 num-traits = "0.2.19"
+once_cell = "1.21.3"
 pin-project = "1.1.10"
 pocket-ic = "9.0.2"
 proptest = "1.6.0"

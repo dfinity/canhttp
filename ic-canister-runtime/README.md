@@ -8,7 +8,7 @@
 Library to abstract the canister runtime so that code making requests to canisters can be reused, e.g.:
 * in production using [`ic_cdk`](https://crates.io/crates/ic-cdk),
 * in unit tests by mocking this crate's `Runtime` trait,
-* in integration tests by implementing this trait for [PocketIC](https://internetcomputer.org/docs/building-apps/test/pocket-ic) or using the `MockHttpRuntime` implementation from the [`ic-mock-http-canister-runtime`](https://crates.io/crates/ic-mock-http-canister-runtime) crate.
+* in integration tests by implementing this trait for [PocketIC](https://internetcomputer.org/docs/building-apps/test/pocket-ic) yourself or using the `PokcetIcRuntime` implementation from the [`ic-pocket-canister-runtime`](https://crates.io/crates/ic-pocket-canister-runtime) crate.
 
 ## Usage
 

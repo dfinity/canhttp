@@ -914,7 +914,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "ic-mock-http-canister-runtime"
+name = "ic-pocket-canister-runtime"
 version = "0.1.0"
 dependencies = [
  "async-trait",
@@ -923,6 +923,7 @@ dependencies = [
  "ic-canister-runtime",
  "ic-cdk",
  "ic-error-types",
+ "once_cell",
  "pocket-ic",
  "serde",
  "serde_json",

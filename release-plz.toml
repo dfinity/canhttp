@@ -40,5 +40,10 @@ name = "ic-canister-runtime"
 publish = true # enable `cargo publish`
 
 [[package]]
+name = "ic-pocket-runtime"
+#git_release_enable = false # enable GitHub releases
+publish = true # enable `cargo publish`
+
+[[package]]
 name = "http_canister"
 release = false # don't process this package

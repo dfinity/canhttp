@@ -2,22 +2,22 @@
 [![DFinity Forum](https://img.shields.io/badge/help-post%20on%20forum.dfinity.org-blue?style=for-the-badge)](https://forum.dfinity.org/)
 [![GitHub license](https://img.shields.io/badge/license-Apache%202.0-blue.svg?logo=apache&style=for-the-badge)](LICENSE)
 
+# `ic-pocket-canister-runtime`
 
-# `ic-mock-http-canister-runtime`
-
-Library to mock [HTTPs outcalls](https://internetcomputer.org/https-outcalls) on the Internet Computer leveraging the [`ic_canister_runtime`](https://crates.io/crates/ic-canister-runtime) crate's `Runtime` trait as well as [PocketIC](https://internetcomputer.org/docs/building-apps/test/pocket-ic).
+Implementation of the [`ic_canister_runtime`](https://crates.io/crates/ic-canister-runtime) crate's `Runtime` trait for [PocketIC](https://internetcomputer.org/docs/building-apps/test/pocket-ic) allowing to mock
+[HTTPs outcalls](https://internetcomputer.org/https-outcalls).
 
 ## Usage
 
-Add this to your `Cargo.toml` (see [crates.io](https://crates.io/crates/ic-mock-http-canister-runtime) for the latest version):
+Add this to your `Cargo.toml` (see [crates.io](https://crates.io/crates/ic-pocket-canister-runtime) for the latest version):
 
 ```toml
-ic-mock-http-canister-runtime = "0.1.0"
+ic-pocket-canister-runtime = "0.1.0"
 ```
 
 Then, use the library to mock HTTP outcalls for canister deployed with PocketIC, as follows:
 ```rust
-use ic_mock_http_canister_runtime::{
+use ic_pocket_canister_runtime::{
     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
     MockHttpRuntime
 };
@@ -40,7 +40,7 @@ assert!(http_request_result.contains("Hello, World!"));
 assert!(http_request_result.contains("\"X-Id\": \"42\""));
 ```
 
-See the [Rust documentation](https://docs.rs/ic-mock-http-canister-runtime) for more details.
+See the [Rust documentation](https://docs.rs/ic-pocket-canister-runtime) for more details.
 
 ## License
 
