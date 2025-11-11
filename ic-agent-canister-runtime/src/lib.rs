@@ -99,6 +99,14 @@ where
 }
 
 fn convert_agent_error(e: AgentError) -> IcError {
+    if let AgentError::CertifiedReject { ref reject, .. } = e {
+        if let Ok(code) = RejectCode::try_from(reject.reject_code as u64) {
+            return IcError::CallRejected {
+                code,
+                message: reject.reject_message.clone(),
+            };
+        }
+    }
     IcError::CallRejected {
         code: RejectCode::SysFatal,
         message: e.to_string(),
