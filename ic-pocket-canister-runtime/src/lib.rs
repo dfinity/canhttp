@@ -39,21 +39,28 @@ enum PocketIcMode {
 ///
 /// # Examples
 /// Call the `make_http_post_request` endpoint on the example [`http_canister`] deployed with
-/// Pocket IC.
+/// Pocket IC and mock the resulting HTTP outcall.
 /// ```rust, no_run
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use ic_canister_runtime::Runtime;
 /// use ic_pocket_canister_runtime::{
 ///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
 ///     PocketIcRuntime
 /// };
+/// use pocket_ic::nonblocking::PocketIc;
 /// # use candid::Principal;
-/// # use ic_canister_runtime::Runtime;
-/// # use pocket_ic::nonblocking::PocketIc;
-/// # use std::mem::MaybeUninit;
 ///
-/// # let pocket_ic: PocketIc = unsafe { MaybeUninit::zeroed().assume_init() };
-/// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous());
+/// let mocks = MockHttpOutcallsBuilder::new()
+///     .given(AnyCanisterHttpRequestMatcher)
+///     .respond_with(
+///         CanisterHttpReply::with_status(200)
+///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
+///     );
+///
+/// let pocket_ic = PocketIc::new().await;
+/// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
+///     .with_http_mocks(mocks.build());
 /// # let canister_id = Principal::anonymous();
 ///
 /// let http_request_result: String = runtime
@@ -98,16 +105,14 @@ impl<'a> PocketIcRuntime<'a> {
     /// ```rust, no_run
     /// # #[tokio::main]
     /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    /// use ic_canister_runtime::Runtime;
     /// use ic_pocket_canister_runtime::{
     ///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
     ///     PocketIcRuntime
     /// };
+    /// use pocket_ic::nonblocking::PocketIc;
     /// # use candid::Principal;
-    /// # use ic_canister_runtime::Runtime;
-    /// # use pocket_ic::nonblocking::PocketIc;
-    /// # use std::mem::MaybeUninit;
     ///
-    /// # let pocket_ic: PocketIc = unsafe { MaybeUninit::zeroed().assume_init() };
     /// let mocks = MockHttpOutcallsBuilder::new()
     ///     // Matches any HTTP outcall request
     ///     .given(AnyCanisterHttpRequestMatcher)
@@ -117,6 +122,7 @@ impl<'a> PocketIcRuntime<'a> {
     ///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
     ///     );
     ///
+    /// let pocket_ic = PocketIc::new().await;
     /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
     ///     .with_http_mocks(mocks.build());
     /// # let canister_id = Principal::anonymous();
