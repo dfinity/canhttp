@@ -117,6 +117,32 @@ impl From<CandidDecodeFailed> for IcError {
 }
 
 /// Runtime when interacting with a canister running on the Internet Computer.
+///
+/// # Examples
+///
+/// Call the `make_http_post_request` endpoint on the example [`http_canister`].
+/// ```rust
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use candid::Principal;
+/// use ic_canister_runtime::{IcRuntime, Runtime, StubRuntime};
+///
+/// let runtime = IcRuntime::new();
+/// # let runtime = StubRuntime::new()
+/// #    .add_stub_response(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#);
+/// # let canister_id = Principal::anonymous();
+/// let http_request_result: String = runtime
+///     .update_call(canister_id, "make_http_post_request", (), 0)
+///     .await
+///     .expect("Call to `http_canister` failed");
+///
+/// assert!(http_request_result.contains("Hello, World!"));
+/// assert!(http_request_result.contains("\"X-Id\": \"42\""));
+/// # Ok(())
+/// # }
+/// ```
+///
+/// [`http_canister`]: https://github.com/dfinity/canhttp/tree/main/examples/http_canister/
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct IcRuntime {
     _private: (),

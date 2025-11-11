@@ -188,6 +188,16 @@ pub trait CanisterHttpRequestMatcher: Send + Debug {
     fn matches(&self, request: &CanisterHttpRequest) -> bool;
 }
 
+/// Implementation of [`CanisterHttpRequestMatcher`] that matches all requests.
+#[derive(Debug)]
+pub struct AnyCanisterHttpRequestMatcher;
+
+impl CanisterHttpRequestMatcher for AnyCanisterHttpRequestMatcher {
+    fn matches(&self, _request: &CanisterHttpRequest) -> bool {
+        true
+    }
+}
+
 /// A wrapper over [`CanisterHttpReply`] that offers a fluent API to create instances.
 ///
 /// # Examples
