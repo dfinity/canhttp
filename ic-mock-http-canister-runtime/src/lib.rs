@@ -42,16 +42,15 @@ const MAX_TICKS: usize = 10;
 /// ```rust, no_run
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use ic_canister_runtime::Runtime;
 /// use ic_mock_http_canister_runtime::{
 ///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
 ///     MockHttpRuntime
 /// };
+/// use pocket_ic::nonblocking::PocketIc;
+/// use std::sync::Arc;
 /// # use candid::Principal;
-/// # use ic_canister_runtime::Runtime;
-/// # use pocket_ic::nonblocking::PocketIc;
-/// # use std::{mem::MaybeUninit, sync::Arc};
 ///
-/// # let pocket_ic: Arc<PocketIc> = unsafe { Arc::new(unsafe { MaybeUninit::zeroed().assume_init() }) };
 /// let mocks = MockHttpOutcallsBuilder::new()
 ///     .given(AnyCanisterHttpRequestMatcher)
 ///     .respond_with(
@@ -59,6 +58,7 @@ const MAX_TICKS: usize = 10;
 ///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
 ///     );
 ///
+/// let pocket_ic = Arc::new(PocketIc::new().await);
 /// let runtime = MockHttpRuntime::new(pocket_ic, Principal::anonymous(), mocks);
 /// # let canister_id = Principal::anonymous();
 ///

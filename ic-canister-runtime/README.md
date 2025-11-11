@@ -22,6 +22,7 @@ Then, use the library to abstract your code making requests to canisters as foll
 ```rust
 use ic_canister_runtime::{IcRuntime, Runtime};
 
+// This runtime makes calls to canisters deployed on the Internet Computer using the `ic-cdk`
 let runtime = IcRuntime::new();
 
 // Make a request to the `http_request` example canister's `make_http_post_request` endpoint
@@ -35,7 +36,26 @@ assert!(http_request_result.contains("Hello, World!"));
 assert!(http_request_result.contains("\"X-Id\": \"42\""));
 ```
 
-See the [Rust documentation](https://docs.rs/ic-canister-runtime) for more details.
+The same code can then be re-used for example in unit tests by simply changing the runtime:
+
+```rust
+use ic_canister_runtime::{Runtime, StubRuntime};
+
+// Use a mock runtime for unit testing
+let runtime = StubRuntime::new()
+    .add_stub_response(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#);
+
+// The code below is the same as in the previous example
+let http_request_result: String = runtime
+    .update_call(canister_id, "make_http_post_request", (), 0)
+    .await
+    .expect("Call to `http_canister` failed");
+
+assert!(http_request_result.contains("Hello, World!"));
+assert!(http_request_result.contains("\"X-Id\": \"42\""));
+```
+
+See the [Rust documentation](https://docs.rs/ic-canister-runtime) for more details as well as the [`ic-mock-http-canister-runtime`](https://docs.rs/ic-mock-http-canister-runtime) and [`ic-agent-canister-runtime`](https://docs.rs/ic-agent-canister-runtime) crates for some further implementations of the `Runtime` trait.
 
 ## Cargo Features
 

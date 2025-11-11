@@ -12,11 +12,13 @@ Library to mock [HTTPs outcalls](https://internetcomputer.org/https-outcalls) on
 Add this to your `Cargo.toml` (see [crates.io](https://crates.io/crates/ic-mock-http-canister-runtime) for the latest version):
 
 ```toml
+ic-canister-runtime = "0.1.0"
 ic-mock-http-canister-runtime = "0.1.0"
 ```
 
 Then, use the library to mock HTTP outcalls for canister deployed with PocketIC, as follows:
 ```rust
+use ic_canister_runtime::Runtime;
 use ic_mock_http_canister_runtime::{
     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
     MockHttpRuntime
