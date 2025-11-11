@@ -5,7 +5,8 @@
 
 # `ic-agent-canister-runtime`
 
-Library that implements the [`ic_canister_runtime`](https://crates.io/crates/ic-canister-runtime) crate's Runtime trait using [`ic-agent`](https://crates.io/crates/ic-agent).
+Library that implements the [`ic_canister_runtime`](https://crates.io/crates/ic-canister-runtime) crate's Runtime trait using [`ic-agent`](https://crates.io/crates/ic-agent). 
+This can be useful when, e.g., contacting a canister via ingress messages instead of via another canister.
 
 ## Usage
 
@@ -13,6 +14,7 @@ Add this to your `Cargo.toml` (see [crates.io](https://crates.io/crates/ic-agent
 
 ```toml
 ic-agent-canister-runtime = "0.1.0"
+ic-canister-runtime = "0.1.0"
 ```
 
 Then, use the library to abstract your code making requests to canisters as follows:

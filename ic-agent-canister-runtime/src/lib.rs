@@ -1,3 +1,8 @@
+//! Library that implements the [`ic_canister_runtime`](https://crates.io/crates/ic-canister-runtime)
+//! crate's Runtime trait using [`ic-agent`](https://crates.io/crates/ic-agent).
+//! This can be useful when, e.g., contacting a canister via ingress messages instead of via another
+//! canister.
+
 use async_trait::async_trait;
 use candid::{decode_one, encode_args, utils::ArgumentEncoder, CandidType, Principal};
 use ic_agent::{Agent, AgentError};
@@ -6,6 +11,8 @@ use ic_error_types::RejectCode;
 use serde::de::DeserializeOwned;
 
 /// Runtime for interacting with a canister through an [`ic_agent::Agent`].
+/// This can be useful when, e.g., contacting a canister via ingress messages instead of via another
+/// canister.
 ///
 ///
 /// # Examples
@@ -15,13 +22,13 @@ use serde::de::DeserializeOwned;
 /// # #[allow(deref_nullptr)]
 /// # #[tokio::main]
 /// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// use std::ptr;
+/// use ic_agent::agent::Agent;
 /// use ic_agent_canister_runtime::AgentRuntime;
 /// use ic_canister_runtime::Runtime;
 /// # use candid::Principal;
 ///
-/// # let agent = unsafe { &*ptr::null() };
-/// let runtime = AgentRuntime::new(agent);
+/// let agent = Agent::builder().build().expect("Failed to initialize agent");
+/// let runtime = AgentRuntime::new(&agent);
 /// # let canister_id = Principal::anonymous();
 /// let http_request_result: String = runtime
 ///     .update_call(canister_id, "make_http_post_request", (), 0)
