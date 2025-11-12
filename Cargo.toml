@@ -2,6 +2,7 @@
 members = [
     "canhttp",
     "examples/http_canister",
+    "examples/json_rpc_canister",
     "ic-agent-canister-runtime",
     "ic-canister-runtime",
     "ic-mock-http-canister-runtime",

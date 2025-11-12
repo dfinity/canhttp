@@ -1,21 +1,22 @@
 [package]
-name = "http_canister"
+name = "json_rpc_canister"
 version = "1.0.0"
 edition.workspace = true
 
 [[bin]]
-name = "http_canister"
+name = "json_rpc_canister"
 path = "src/main.rs"
 
 [dependencies]
 candid = { workspace = true }
-canhttp = { path = "../../canhttp", features = ["http"] }
+canhttp = { path = "../../canhttp", features = ["http", "json"] }
 http = { workspace = true }
 ic-cdk = { workspace = true }
 tower = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
 
 [dev-dependencies]
 ic-management-canister-types = { workspace = true }
 ic-test-utilities-load-wasm = { workspace = true }
 pocket-ic = { workspace = true }
-serde = { workspace = true }

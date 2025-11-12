@@ -1067,7 +1067,6 @@ dependencies = [
  "pocket-ic",
  "serde",
  "tower",
- "tower-layer",
 ]
 
 [[package]]
@@ -1583,6 +1582,22 @@ checksum = "b011eec8cc36da2aab2d5cff675ec18454fad408585853910a202391cf9f8e65"
 dependencies = [
  "once_cell",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "json_rpc_canister"
+version = "1.0.0"
+dependencies = [
+ "candid",
+ "canhttp",
+ "http",
+ "ic-cdk",
+ "ic-management-canister-types",
+ "ic-test-utilities-load-wasm",
+ "pocket-ic",
+ "serde",
+ "serde_json",
+ "tower",
 ]
 
 [[package]]
