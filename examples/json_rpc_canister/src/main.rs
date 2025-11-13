@@ -2,15 +2,9 @@
 
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
-    http::{
-        json::{
-            CreateJsonRpcIdFilter, HttpJsonRpcRequest, HttpJsonRpcResponse, Id,
-            JsonConversionLayer, JsonRpcRequest, JsonRpcResponse,
-        },
-        HttpConversionLayer,
-    },
+    http::json::{HttpJsonRpcRequest, HttpJsonRpcResponse, Id, JsonRpcHttpLayer, JsonRpcRequest},
     observability::ObservabilityLayer,
-    Client, ConvertServiceBuilder,
+    Client,
 };
 use ic_cdk::update;
 use serde::{de::DeserializeOwned, Serialize};
@@ -63,15 +57,8 @@ where
                     ic_cdk::println!("Error {error:?}");
                 }),
         )
-        // Ensure the requests and responses have matching JSON-RPC request IDs
-        .filter_response(CreateJsonRpcIdFilter::new())
-        // Convert HTTP requests and responses to JSON-RPC requests and responses
-        .layer(JsonConversionLayer::<
-            JsonRpcRequest<Params>,
-            JsonRpcResponse<Result>,
-        >::new())
-        // Deal with requests and responses from the `http` crate instead of the `ic-cdk`
-        .layer(HttpConversionLayer)
+        // Deal with JSON-RPC over HTTP requests and responses
+        .layer(JsonRpcHttpLayer::<Params, Result>::new())
         // Use cycles from the canister to pay for HTTPs outcalls
         .cycles_accounting(ChargeMyself::default())
         // The actual client
