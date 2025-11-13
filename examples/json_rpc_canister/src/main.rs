@@ -1,6 +1,5 @@
 //! Example of a canister using `canhttp` to issue JSON-RPC HTTP requests.
 
-use candid::CandidType;
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
     http::{
@@ -14,7 +13,7 @@ use canhttp::{
     Client, ConvertServiceBuilder,
 };
 use ic_cdk::update;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
