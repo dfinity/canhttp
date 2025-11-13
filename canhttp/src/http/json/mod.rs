@@ -146,7 +146,7 @@ pub struct JsonRpcHttpLayer<Params, Result> {
 impl<Params, Result> JsonRpcHttpLayer<Params, Result> {
     /// Returns a new [`JsonRpcHttpLayer`].
     pub fn new() -> Self {
-        Self::new()
+        Self::default()
     }
 }
 
