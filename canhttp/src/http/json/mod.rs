@@ -138,7 +138,7 @@ where
 /// have a valid JSON-RPC ID that matches the request ID.
 ///
 /// [`Service`]: tower::Service
-#[derive(Debug, Default)]
+#[derive(Debug)]
 pub struct JsonRpcHttpLayer<Params, Result> {
     _marker: PhantomData<(Params, Result)>,
 }
@@ -146,7 +146,9 @@ pub struct JsonRpcHttpLayer<Params, Result> {
 impl<Params, Result> JsonRpcHttpLayer<Params, Result> {
     /// Returns a new [`JsonRpcHttpLayer`].
     pub fn new() -> Self {
-        Self::default()
+        Self {
+            _marker: PhantomData,
+        }
     }
 }
 
@@ -155,6 +157,12 @@ impl<Params, Result> Clone for JsonRpcHttpLayer<Params, Result> {
         Self {
             _marker: self._marker,
         }
+    }
+}
+
+impl<Params, Result> Default for JsonRpcHttpLayer<Params, Result> {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
