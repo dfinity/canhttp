@@ -50,7 +50,7 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v4
       - name: 'Run unit tests'
-        run: cargo test --locked --workspace --exclude http_canister
+        run: cargo test --locked --workspace --exclude http_canister --exclude json_rpc_canister
 
   integration-tests:
     runs-on: ubuntu-latest
@@ -87,4 +87,4 @@ jobs:
           pocket-ic-server-version: "9.0.2"
 
       - name: 'Run integration tests'
-        run: cargo test --locked -p http_canister
+        run: cargo test --locked -p http_canister -p json_rpc_canister
