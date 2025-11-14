@@ -8,7 +8,7 @@
 Library to abstract the canister runtime so that code making requests to canisters can be reused, e.g.:
 * in production using [`ic_cdk`](https://crates.io/crates/ic-cdk),
 * in unit tests by mocking this crate's `Runtime` trait,
-* in integration tests by implementing this trait for [PocketIC](https://internetcomputer.org/docs/building-apps/test/pocket-ic) or using the `MockHttpRuntime` implementation from the [`ic-mock-http-canister-runtime`](https://crates.io/crates/ic-mock-http-canister-runtime) crate.
+* in integration tests by implementing this trait for [PocketIC](https://internetcomputer.org/docs/building-apps/test/pocket-ic) yourself or using the `PokcetIcRuntime` implementation from the [`ic-pocket-canister-runtime`](https://crates.io/crates/ic-pocket-canister-runtime) crate.
 
 ## Usage
 
@@ -55,7 +55,7 @@ assert!(http_request_result.contains("Hello, World!"));
 assert!(http_request_result.contains("\"X-Id\": \"42\""));
 ```
 
-See the [Rust documentation](https://docs.rs/ic-canister-runtime) for more details as well as the [`ic-mock-http-canister-runtime`](https://docs.rs/ic-mock-http-canister-runtime) and [`ic-agent-canister-runtime`](https://docs.rs/ic-agent-canister-runtime) crates for some further implementations of the `Runtime` trait.
+See the [Rust documentation](https://docs.rs/ic-canister-runtime) for more details as well as the [`ic-pocket-canister-runtime`](https://docs.rs/ic-pocket-canister-runtime) and [`ic-agent-canister-runtime`](https://docs.rs/ic-agent-canister-runtime) crates for some further implementations of the `Runtime` trait.
 
 ## Cargo Features
 

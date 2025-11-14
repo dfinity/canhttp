@@ -1,6 +1,6 @@
 use pocket_ic::common::rest::{CanisterHttpHeader, CanisterHttpRequest, CanisterHttpResponse};
 use serde_json::Value;
-use std::fmt::Debug;
+use std::{fmt::Debug, sync::Mutex};
 
 pub mod json;
 
@@ -9,23 +9,25 @@ pub mod json;
 /// When an instance of [`MockHttpOutcalls`] is dropped, it panics if not all mocks were
 /// consumed (i.e., if it is not empty).
 #[derive(Debug, Default)]
-pub struct MockHttpOutcalls(Vec<MockHttpOutcall>);
+pub struct MockHttpOutcalls(Mutex<Vec<MockHttpOutcall>>);
 
 impl MockHttpOutcalls {
     /// Asserts that no HTTP outcalls are performed.
-    pub const NEVER: MockHttpOutcalls = Self(Vec::new());
+    pub fn never() -> MockHttpOutcalls {
+        MockHttpOutcalls(Mutex::new(Vec::new()))
+    }
 
     /// Add a new mocked HTTP outcall.
-    pub fn push(&mut self, mock: MockHttpOutcall) {
-        self.0.push(mock);
+    pub fn push(&self, mock: MockHttpOutcall) {
+        self.0.try_lock().unwrap().push(mock);
     }
 
     /// Returns a matching [`MockHttpOutcall`] for the given request if there is one, otherwise
     /// [`None`].
     /// Panics if there are more than one matching [`MockHttpOutcall`]s for the given request.
-    pub fn pop_matching(&mut self, request: &CanisterHttpRequest) -> Option<MockHttpOutcall> {
-        let matching_positions = self
-            .0
+    pub fn pop_matching(&self, request: &CanisterHttpRequest) -> Option<MockHttpOutcall> {
+        let mut outcalls = self.0.try_lock().unwrap();
+        let matching_positions = outcalls
             .iter()
             .enumerate()
             .filter_map(|(i, mock)| {
@@ -39,7 +41,7 @@ impl MockHttpOutcalls {
 
         match matching_positions.len() {
             0 => None,
-            1 => Some(self.0.swap_remove(matching_positions[0])),
+            1 => Some(outcalls.swap_remove(matching_positions[0])),
             _ => panic!("Multiple mocks match the request: {:?}", request),
         }
     }
@@ -47,10 +49,11 @@ impl MockHttpOutcalls {
 
 impl Drop for MockHttpOutcalls {
     fn drop(&mut self) {
-        if !self.0.is_empty() {
+        let outcalls = self.0.try_lock().unwrap();
+        if !outcalls.is_empty() {
             panic!(
                 "MockHttpOutcalls dropped but {} mocks were not consumed: {:?}",
-                self.0.len(),
+                outcalls.len(),
                 self.0
             );
         }
@@ -83,7 +86,7 @@ impl MockHttpOutcallsBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use ic_mock_http_canister_runtime::{
+    /// use ic_pocket_canister_runtime::{
     ///     CanisterHttpReply, JsonRpcRequestMatcher, MockHttpOutcallsBuilder
     /// };
     ///
@@ -146,7 +149,7 @@ impl MockHttpOutcallBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use ic_mock_http_canister_runtime::{
+    /// use ic_pocket_canister_runtime::{
     ///     CanisterHttpReply, JsonRpcRequestMatcher, MockHttpOutcallsBuilder
     /// };
     ///
@@ -171,7 +174,7 @@ impl MockHttpOutcallBuilder {
     ///
     /// [`given`]: MockHttpOutcallsBuilder::given
     pub fn respond_with(
-        mut self,
+        self,
         response: impl Into<CanisterHttpResponse>,
     ) -> MockHttpOutcallsBuilder {
         self.parent.0.push(MockHttpOutcall {
@@ -203,7 +206,7 @@ impl CanisterHttpRequestMatcher for AnyCanisterHttpRequestMatcher {
 /// # Examples
 ///
 /// ```rust
-/// use ic_mock_http_canister_runtime::CanisterHttpReply;
+/// use ic_pocket_canister_runtime::CanisterHttpReply;
 /// use pocket_ic::common::rest::{CanisterHttpHeader, CanisterHttpResponse};
 /// use serde_json::json;
 ///
@@ -281,7 +284,7 @@ impl From<CanisterHttpReply> for CanisterHttpResponse {
 ///
 /// ```rust
 /// use ic_error_types::RejectCode;
-/// use ic_mock_http_canister_runtime::CanisterHttpReject;
+/// use ic_pocket_canister_runtime::CanisterHttpReject;
 /// use pocket_ic::common::rest::CanisterHttpResponse;
 ///
 /// let response: CanisterHttpResponse = CanisterHttpReject::with_reject_code(RejectCode::SysTransient)
