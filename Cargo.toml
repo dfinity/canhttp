@@ -3,6 +3,7 @@ members = [
     "canhttp",
     "examples/http_canister",
     "examples/json_rpc_canister",
+    "examples/multi_canister",
     "ic-agent-canister-runtime",
     "ic-canister-runtime",
     "ic-mock-http-canister-runtime",
@@ -49,6 +50,7 @@ tokio = "1.44.1"
 tower = "0.5.2"
 tower-layer = "0.3.3"
 url = "2.5.7"
+uuid = "1.16.0"
 
 [profile.release]
 debug = false
