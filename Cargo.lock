@@ -306,7 +306,7 @@ dependencies = [
  "http",
  "ic-cdk",
  "ic-error-types",
- "ic-management-canister-types",
+ "ic-management-canister-types 0.5.0",
  "itertools",
  "maplit",
  "num-traits",
@@ -1224,7 +1224,7 @@ dependencies = [
  "ic-cdk-executor",
  "ic-cdk-macros",
  "ic-error-types",
- "ic-management-canister-types",
+ "ic-management-canister-types 0.3.3",
  "ic0",
  "serde",
  "serde_bytes",
@@ -1298,6 +1298,17 @@ name = "ic-management-canister-types"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ea7e5b8a0f7c3b320d9450ac950547db4f24a31601b5d398f9680b64427455d2"
+dependencies = [
+ "candid",
+ "serde",
+ "serde_bytes",
+]
+
+[[package]]
+name = "ic-management-canister-types"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3149217e24186df3f13dc45eee14cdb3e5cad07d0b2b67bd53555c1c55462957"
 dependencies = [
  "candid",
  "serde",
@@ -1968,7 +1979,7 @@ dependencies = [
  "flate2",
  "hex",
  "ic-certification",
- "ic-management-canister-types",
+ "ic-management-canister-types 0.3.3",
  "ic-transport-types 0.40.1",
  "reqwest",
  "schemars",
@@ -2873,7 +2884,7 @@ name = "test_fixtures"
 version = "1.0.0"
 dependencies = [
  "candid",
- "ic-management-canister-types",
+ "ic-management-canister-types 0.5.0",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
  "serde",
