@@ -7,8 +7,8 @@ use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use thiserror::Error;
 
-/// Convert requests of type [`http::Request<T>`],
-/// where `T` is `Serializable`, into [`HttpRequest`].
+/// Convert requests of type [`http::Request<T>`], where `T` is `Serializable`,
+/// into [`HttpRequest`] by serializing the request body as a JSON byte vector.
 #[derive(Debug)]
 pub struct JsonRequestConverter<T> {
     _marker: PhantomData<T>,
