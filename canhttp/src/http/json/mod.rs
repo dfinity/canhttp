@@ -134,10 +134,13 @@ where
 
 /// Middleware that combines a [`HttpConversionLayer`], a [`JsonConversionLayer`] to create
 /// an JSON-RPC over HTTP [`Service`].
-/// This middleware also contains a [`ConsistentJsonRpcIdFilter`] to ensure the responses
-/// have a valid JSON-RPC ID that matches the request ID.
+///
+/// This middleware includes a [`ConsistentJsonRpcIdFilter`], which ensures that each response
+/// carries a valid JSON-RPC ID matching the corresponding request ID. This guarantees that the
+/// [`Service`] complies with the [JSON-RPC 2.0 specification].
 ///
 /// [`Service`]: tower::Service
+/// [JSON-RPC 2.0 specification]: https://www.jsonrpc.org/specification
 #[derive(Debug)]
 pub struct JsonRpcHttpLayer<Params, Result> {
     _marker: PhantomData<(Params, Result)>,
