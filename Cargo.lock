@@ -1062,10 +1062,7 @@ dependencies = [
  "canhttp",
  "http",
  "ic-cdk",
- "ic-management-canister-types",
- "ic-test-utilities-load-wasm",
- "pocket-ic",
- "serde",
+ "test_fixtures",
  "tower",
 ]
 
@@ -1592,11 +1589,9 @@ dependencies = [
  "canhttp",
  "http",
  "ic-cdk",
- "ic-management-canister-types",
- "ic-test-utilities-load-wasm",
- "pocket-ic",
  "serde",
  "serde_json",
+ "test_fixtures",
  "tower",
 ]
 
@@ -1752,11 +1747,8 @@ dependencies = [
  "canhttp",
  "http",
  "ic-cdk",
- "ic-management-canister-types",
- "ic-test-utilities-load-wasm",
- "pocket-ic",
- "serde",
  "serde_json",
+ "test_fixtures",
  "tower",
  "uuid",
 ]
@@ -2874,6 +2866,17 @@ dependencies = [
  "once_cell",
  "rustix",
  "windows-sys 0.61.2",
+]
+
+[[package]]
+name = "test_fixtures"
+version = "1.0.0"
+dependencies = [
+ "candid",
+ "ic-management-canister-types",
+ "ic-test-utilities-load-wasm",
+ "pocket-ic",
+ "serde",
 ]
 
 [[package]]
