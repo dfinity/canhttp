@@ -144,11 +144,27 @@ impl<'a> PocketIcRuntime<'a> {
         self
     }
 
-    /// Use Pocket IC in [live mode](https://github.com/dfinity/ic/blob/f0c82237ae16745ac54dd3838b3f91ce32a6bc52/packages/pocket-ic/HOWTO.md?plain=1#L43).
+    /// Configures this [`PocketIcRuntime`] instance to use [`PocketIc`] in live mode.
     ///
-    /// The pocket IC instance will automatically progress and execute HTTPs outcalls.
-    /// This setting renders the tests non-deterministic.
+    /// In live mode, PocketIC automatically progresses time and executes outgoing HTTPS requests
+    /// as they occur.
+    /// This makes test execution **non-deterministic**.
+    ///
+    /// **Important:**
+    /// This method **does not** switch the underlying [`PocketIc`] instance to live mode.
+    /// You must first call [`PocketIc::make_live`] to do so.
+    ///
+    /// # Panics
+    /// Panics if the underlying [`PocketIc`] instance is not in live mode
+    /// (i.e., if [`PocketIc::make_live`] was not called beforehand).
+    ///
+    /// # See also
+    /// - [PocketIC live mode documentation](https://github.com/dfinity/ic/blob/f0c82237ae16745ac54dd3838b3f91ce32a6bc52/packages/pocket-ic/HOWTO.md?plain=1#L43)
     pub fn live_mode(mut self) -> Self {
+        assert!(
+            self.env.auto_progress_enabled(),
+            "Auto-progress must be enabled on `PocketIc` instance with `PocketIc::make_live()`"
+        );
         self.mode = PocketIcMode::Live;
         self
     }
