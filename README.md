@@ -38,15 +38,15 @@ Complete examples are available [here](examples) and see also the [Rust document
 
 ### Feature `http`
 
-Offers middleware that transforms a low-level service that uses Candid types into one that uses types from the [http](https://crates.io/crates/http) crate.
+Offers middleware that transforms a low-level service that uses Candid types into one that uses types from the [http](https://crates.io/crates/http) crate. See the [`http_canister`](examples/http_canister) for a complete example.
 
 ### Feature `json`
 
-Offers middleware that transforms a low-level service that transmits bytes into one that transmits JSON payloads.
+Offers middleware that transforms a low-level service that transmits bytes into one that transmits JSON payloads. See the [`json_rpc_canister`](examples/json_rpc_canister) for a complete example.
 
 ### Feature `multi`
 
-Make multiple calls in parallel and handle their multiple results.
+Make multiple calls in parallel and handle their multiple results. See the [`multi_canister`](examples/multi_canister) for a complete example.
 
 ## License
 

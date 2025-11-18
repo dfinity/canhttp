@@ -22,6 +22,21 @@ impl<R> CyclesWalletRuntime<R> {
             cycles_wallet_canister_id,
         }
     }
+
+    /// Return a reference to the underlying runtime.
+    pub fn get_runtime(&self) -> &R {
+        &self.runtime
+    }
+
+    /// Modify the underlying runtime by applying a transformation function.
+    ///
+    /// The transformation does not necessarily produce a runtime of the same type.
+    pub fn with_runtime<S, F: FnOnce(R) -> S>(self, transformation: F) -> CyclesWalletRuntime<S> {
+        CyclesWalletRuntime {
+            runtime: transformation(self.runtime),
+            cycles_wallet_canister_id: self.cycles_wallet_canister_id,
+        }
+    }
 }
 
 #[async_trait]
