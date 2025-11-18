@@ -18,11 +18,8 @@ canhttp = { workspace = true, features = ["json", "http"] }
 ic-canister-runtime = { workspace = true }
 ic-cdk = { workspace = true }
 ic-error-types = { workspace = true }
-once_cell = { workspace = true }
 pocket-ic = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
-url = { workspace = true }
-
-[dev-dependencies]
 tokio = { workspace = true }
+url = { workspace = true }

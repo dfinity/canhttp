@@ -24,6 +24,7 @@ use pocket_ic::{
 };
 use serde::de::DeserializeOwned;
 use std::time::Duration;
+use tokio::sync::Mutex;
 
 const DEFAULT_MAX_RESPONSE_BYTES: u64 = 2_000_000;
 const MAX_TICKS: usize = 10;
@@ -78,7 +79,10 @@ enum PocketIcMode {
 pub struct PocketIcRuntime<'a> {
     env: &'a PocketIc,
     caller: Principal,
-    mocks: Option<Box<dyn ExecuteHttpOutcallMocks>>,
+    // The mocks are stored in a Mutex<Box<?>> so they can be modified in the implementation of
+    // the `Runtime::update_call` method using interior mutability.
+    // This is necessary since `Runtime::update_call` takes an immutable reference to the runtime.
+    mocks: Option<Mutex<Box<dyn ExecuteHttpOutcallMocks>>>,
     mode: PocketIcMode,
 }
 
@@ -140,7 +144,7 @@ impl<'a> PocketIcRuntime<'a> {
     ///
     /// [`http_canister`]: https://github.com/dfinity/canhttp/tree/main/examples/http_canister/
     pub fn with_http_mocks(mut self, mocks: impl ExecuteHttpOutcallMocks + 'static) -> Self {
-        self.mocks = Some(Box::new(mocks));
+        self.mocks = Some(Mutex::new(Box::new(mocks)));
         self
     }
 
@@ -160,9 +164,9 @@ impl<'a> PocketIcRuntime<'a> {
     ///
     /// # See also
     /// - [PocketIC live mode documentation](https://github.com/dfinity/ic/blob/f0c82237ae16745ac54dd3838b3f91ce32a6bc52/packages/pocket-ic/HOWTO.md?plain=1#L43)
-    pub fn live_mode(mut self) -> Self {
+    pub async fn live_mode(mut self) -> Self {
         assert!(
-            self.env.auto_progress_enabled(),
+            self.env.auto_progress_enabled().await,
             "Auto-progress must be enabled on `PocketIc` instance with `PocketIc::make_live()`"
         );
         self.mode = PocketIcMode::Live;
@@ -194,7 +198,10 @@ impl Runtime for PocketIcRuntime<'_> {
             .await
             .map_err(parse_reject_response)?;
         if let Some(mock) = &self.mocks {
-            mock.execute_http_outcall_mocks(self.env).await;
+            mock.try_lock()
+                .unwrap()
+                .execute_http_outcall_mocks(self.env)
+                .await;
         }
         (match self.mode {
             PocketIcMode::NotLive => self.env.await_call(message_id).await,
@@ -231,12 +238,12 @@ impl Runtime for PocketIcRuntime<'_> {
 #[async_trait]
 pub trait ExecuteHttpOutcallMocks: Send + Sync {
     /// Execute HTTP outcall mocks.
-    async fn execute_http_outcall_mocks(&self, runtime: &PocketIc) -> ();
+    async fn execute_http_outcall_mocks(&mut self, runtime: &PocketIc) -> ();
 }
 
 #[async_trait]
 impl ExecuteHttpOutcallMocks for MockHttpOutcalls {
-    async fn execute_http_outcall_mocks(&self, env: &PocketIc) -> () {
+    async fn execute_http_outcall_mocks(&mut self, env: &PocketIc) -> () {
         loop {
             let pending_requests = tick_until_http_requests(env).await;
             if let Some(request) = pending_requests.first() {

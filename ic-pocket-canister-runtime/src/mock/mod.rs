@@ -1,6 +1,6 @@
 use pocket_ic::common::rest::{CanisterHttpHeader, CanisterHttpRequest, CanisterHttpResponse};
 use serde_json::Value;
-use std::{fmt::Debug, sync::Mutex};
+use std::fmt::Debug;
 
 pub mod json;
 
@@ -9,25 +9,25 @@ pub mod json;
 /// When an instance of [`MockHttpOutcalls`] is dropped, it panics if not all mocks were
 /// consumed (i.e., if it is not empty).
 #[derive(Debug, Default)]
-pub struct MockHttpOutcalls(Mutex<Vec<MockHttpOutcall>>);
+pub struct MockHttpOutcalls(Vec<MockHttpOutcall>);
 
 impl MockHttpOutcalls {
     /// Asserts that no HTTP outcalls are performed.
     pub fn never() -> MockHttpOutcalls {
-        MockHttpOutcalls(Mutex::new(Vec::new()))
+        MockHttpOutcalls(Vec::new())
     }
 
     /// Add a new mocked HTTP outcall.
-    pub fn push(&self, mock: MockHttpOutcall) {
-        self.0.try_lock().unwrap().push(mock);
+    pub fn push(&mut self, mock: MockHttpOutcall) {
+        self.0.push(mock);
     }
 
     /// Returns a matching [`MockHttpOutcall`] for the given request if there is one, otherwise
     /// [`None`].
     /// Panics if there are more than one matching [`MockHttpOutcall`]s for the given request.
-    pub fn pop_matching(&self, request: &CanisterHttpRequest) -> Option<MockHttpOutcall> {
-        let mut outcalls = self.0.try_lock().unwrap();
-        let matching_positions = outcalls
+    pub fn pop_matching(&mut self, request: &CanisterHttpRequest) -> Option<MockHttpOutcall> {
+        let matching_positions = self
+            .0
             .iter()
             .enumerate()
             .filter_map(|(i, mock)| {
@@ -41,7 +41,7 @@ impl MockHttpOutcalls {
 
         match matching_positions.len() {
             0 => None,
-            1 => Some(outcalls.swap_remove(matching_positions[0])),
+            1 => Some(self.0.swap_remove(matching_positions[0])),
             _ => panic!("Multiple mocks match the request: {:?}", request),
         }
     }
@@ -49,11 +49,10 @@ impl MockHttpOutcalls {
 
 impl Drop for MockHttpOutcalls {
     fn drop(&mut self) {
-        let outcalls = self.0.try_lock().unwrap();
-        if !outcalls.is_empty() {
+        if !self.0.is_empty() {
             panic!(
                 "MockHttpOutcalls dropped but {} mocks were not consumed: {:?}",
-                outcalls.len(),
+                self.0.len(),
                 self.0
             );
         }
@@ -174,7 +173,7 @@ impl MockHttpOutcallBuilder {
     ///
     /// [`given`]: MockHttpOutcallsBuilder::given
     pub fn respond_with(
-        self,
+        mut self,
         response: impl Into<CanisterHttpResponse>,
     ) -> MockHttpOutcallsBuilder {
         self.parent.0.push(MockHttpOutcall {
@@ -186,7 +185,7 @@ impl MockHttpOutcallBuilder {
 }
 
 /// A trait that allows checking if a given [`CanisterHttpRequest`] matches an HTTP outcall mock.
-pub trait CanisterHttpRequestMatcher: Send + Debug {
+pub trait CanisterHttpRequestMatcher: Send + Sync + Debug {
     /// Returns whether the given [`CanisterHttpRequest`] matches.
     fn matches(&self, request: &CanisterHttpRequest) -> bool;
 }

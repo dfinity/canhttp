@@ -1318,7 +1318,6 @@ dependencies = [
  "ic-canister-runtime",
  "ic-cdk",
  "ic-error-types",
- "once_cell",
  "pocket-ic",
  "serde",
  "serde_json",
