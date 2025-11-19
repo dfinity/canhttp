@@ -18,3 +18,4 @@ tower = { workspace = true }
 
 [dev-dependencies]
 test_fixtures = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
