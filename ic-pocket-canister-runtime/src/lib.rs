@@ -30,10 +30,10 @@ const DEFAULT_MAX_RESPONSE_BYTES: u64 = 2_000_000;
 const MAX_TICKS: usize = 10;
 
 #[derive(Default)]
-enum PocketIcMode {
-    Live,
+enum PocketIcLiveMode {
+    Enabled,
     #[default]
-    NotLive,
+    Disabled,
 }
 
 /// [`Runtime`] using [`PocketIc`] to make calls to canisters.
@@ -61,6 +61,7 @@ enum PocketIcMode {
 ///
 /// let pocket_ic = PocketIc::new().await;
 /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
+///     .await
 ///     .with_http_mocks(mocks.build());
 /// # let canister_id = Principal::anonymous();
 ///
@@ -83,18 +84,55 @@ pub struct PocketIcRuntime<'a> {
     // the `Runtime::update_call` method using interior mutability.
     // This is necessary since `Runtime::update_call` takes an immutable reference to the runtime.
     mocks: Option<Mutex<Box<dyn ExecuteHttpOutcallMocks>>>,
-    mode: PocketIcMode,
+    mode: PocketIcLiveMode,
 }
 
 impl<'a> PocketIcRuntime<'a> {
     /// Create a new [`PocketIcRuntime`] with the given [`PocketIc`].
     /// All calls to canisters are made using the given caller identity.
-    pub fn new(env: &'a PocketIc, caller: Principal) -> Self {
+    ///
+    /// The given [`PocketIc`] instance must not be configured to use live mode.
+    /// To build a [`PocketIcRuntime`] instance with [`PocketIc`] running in live mode,
+    /// see [`PocketIcRuntime::with_live_mode`].
+    pub async fn new(env: &'a PocketIc, caller: Principal) -> Self {
+        assert!(
+            !env.auto_progress_enabled().await,
+            "Auto-progress is be enabled on `PocketIc`. To use `PocketIc` in live mode, use `PocketIcRuntime::with_live_mode`"
+        );
         Self {
             env,
             caller,
             mocks: None,
             mode: Default::default(),
+        }
+    }
+
+    /// Create a new [`PocketIcRuntime`] with the given [`PocketIc`] configured to use live mode.
+    ///
+    /// In live mode, PocketIC automatically progresses time and executes outgoing HTTPS requests
+    /// as they occur.
+    /// This makes test execution **non-deterministic**.
+    ///
+    /// **Important:**
+    /// This method **does not** switch the underlying [`PocketIc`] instance to live mode.
+    /// You must first call [`PocketIc::make_live`] to do so.
+    ///
+    /// # Panics
+    /// Panics if the underlying [`PocketIc`] instance is not in live mode
+    /// (i.e., if [`PocketIc::make_live`] was not called beforehand).
+    ///
+    /// # See also
+    /// - [PocketIC live mode documentation](https://github.com/dfinity/ic/blob/f0c82237ae16745ac54dd3838b3f91ce32a6bc52/packages/pocket-ic/HOWTO.md?plain=1#L43)
+    pub async fn with_live_mode(env: &'a PocketIc, caller: Principal) -> Self {
+        assert!(
+            env.auto_progress_enabled().await,
+            "Auto-progress must be enabled on `PocketIc` instance with `PocketIc::make_live()`"
+        );
+        Self {
+            env,
+            caller,
+            mocks: None,
+            mode: PocketIcLiveMode::Enabled,
         }
     }
 
@@ -128,6 +166,7 @@ impl<'a> PocketIcRuntime<'a> {
     ///
     /// let pocket_ic = PocketIc::new().await;
     /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
+    ///     .await
     ///     .with_http_mocks(mocks.build());
     /// # let canister_id = Principal::anonymous();
     ///
@@ -145,31 +184,6 @@ impl<'a> PocketIcRuntime<'a> {
     /// [`http_canister`]: https://github.com/dfinity/canhttp/tree/main/examples/http_canister/
     pub fn with_http_mocks(mut self, mocks: impl ExecuteHttpOutcallMocks + 'static) -> Self {
         self.mocks = Some(Mutex::new(Box::new(mocks)));
-        self
-    }
-
-    /// Configures this [`PocketIcRuntime`] instance to use [`PocketIc`] in live mode.
-    ///
-    /// In live mode, PocketIC automatically progresses time and executes outgoing HTTPS requests
-    /// as they occur.
-    /// This makes test execution **non-deterministic**.
-    ///
-    /// **Important:**
-    /// This method **does not** switch the underlying [`PocketIc`] instance to live mode.
-    /// You must first call [`PocketIc::make_live`] to do so.
-    ///
-    /// # Panics
-    /// Panics if the underlying [`PocketIc`] instance is not in live mode
-    /// (i.e., if [`PocketIc::make_live`] was not called beforehand).
-    ///
-    /// # See also
-    /// - [PocketIC live mode documentation](https://github.com/dfinity/ic/blob/f0c82237ae16745ac54dd3838b3f91ce32a6bc52/packages/pocket-ic/HOWTO.md?plain=1#L43)
-    pub async fn live_mode(mut self) -> Self {
-        assert!(
-            self.env.auto_progress_enabled().await,
-            "Auto-progress must be enabled on `PocketIc` instance with `PocketIc::make_live()`"
-        );
-        self.mode = PocketIcMode::Live;
         self
     }
 }
@@ -204,8 +218,8 @@ impl Runtime for PocketIcRuntime<'_> {
                 .await;
         }
         (match self.mode {
-            PocketIcMode::NotLive => self.env.await_call(message_id).await,
-            PocketIcMode::Live => self.env.await_call_no_ticks(message_id).await,
+            PocketIcLiveMode::Disabled => self.env.await_call(message_id).await,
+            PocketIcLiveMode::Enabled => self.env.await_call_no_ticks(message_id).await,
         })
         .map(decode_call_response)
         .map_err(parse_reject_response)?
