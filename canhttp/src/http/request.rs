@@ -127,6 +127,7 @@ impl Convert<HttpRequest> for HttpRequestConverter {
             headers,
             body,
             transform,
+            is_replicated: Some(true),
         })
     }
 }
