@@ -6,7 +6,7 @@ members = [
     "examples/multi_canister",
     "ic-agent-canister-runtime",
     "ic-canister-runtime",
-    "ic-mock-http-canister-runtime",
+    "ic-pocket-canister-runtime",
     "test_fixtures",
 ]
 resolver = "2"

@@ -13,7 +13,9 @@ pub struct MockHttpOutcalls(Vec<MockHttpOutcall>);
 
 impl MockHttpOutcalls {
     /// Asserts that no HTTP outcalls are performed.
-    pub const NEVER: MockHttpOutcalls = Self(Vec::new());
+    pub fn never() -> MockHttpOutcalls {
+        MockHttpOutcalls(Vec::new())
+    }
 
     /// Add a new mocked HTTP outcall.
     pub fn push(&mut self, mock: MockHttpOutcall) {
@@ -83,7 +85,7 @@ impl MockHttpOutcallsBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use ic_mock_http_canister_runtime::{
+    /// use ic_pocket_canister_runtime::{
     ///     CanisterHttpReply, JsonRpcRequestMatcher, MockHttpOutcallsBuilder
     /// };
     ///
@@ -146,7 +148,7 @@ impl MockHttpOutcallBuilder {
     /// # Examples
     ///
     /// ```rust
-    /// use ic_mock_http_canister_runtime::{
+    /// use ic_pocket_canister_runtime::{
     ///     CanisterHttpReply, JsonRpcRequestMatcher, MockHttpOutcallsBuilder
     /// };
     ///
@@ -183,7 +185,7 @@ impl MockHttpOutcallBuilder {
 }
 
 /// A trait that allows checking if a given [`CanisterHttpRequest`] matches an HTTP outcall mock.
-pub trait CanisterHttpRequestMatcher: Send + Debug {
+pub trait CanisterHttpRequestMatcher: Send + Sync + Debug {
     /// Returns whether the given [`CanisterHttpRequest`] matches.
     fn matches(&self, request: &CanisterHttpRequest) -> bool;
 }
@@ -203,7 +205,7 @@ impl CanisterHttpRequestMatcher for AnyCanisterHttpRequestMatcher {
 /// # Examples
 ///
 /// ```rust
-/// use ic_mock_http_canister_runtime::CanisterHttpReply;
+/// use ic_pocket_canister_runtime::CanisterHttpReply;
 /// use pocket_ic::common::rest::{CanisterHttpHeader, CanisterHttpResponse};
 /// use serde_json::json;
 ///
@@ -281,7 +283,7 @@ impl From<CanisterHttpReply> for CanisterHttpResponse {
 ///
 /// ```rust
 /// use ic_error_types::RejectCode;
-/// use ic_mock_http_canister_runtime::CanisterHttpReject;
+/// use ic_pocket_canister_runtime::CanisterHttpReject;
 /// use pocket_ic::common::rest::CanisterHttpResponse;
 ///
 /// let response: CanisterHttpResponse = CanisterHttpReject::with_reject_code(RejectCode::SysTransient)
