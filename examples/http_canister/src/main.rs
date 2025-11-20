@@ -1,4 +1,5 @@
 //! Example of a canister using `canhttp` to issue HTTP requests.
+
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
     http::HttpConversionLayer,
@@ -11,7 +12,7 @@ use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 /// Make an HTTP POST request.
 #[update]
 pub async fn make_http_post_request() -> String {
-    let request = http::Request::post("https://httpbin.org/anything")
+    let request = http::Request::post(format!("{}/anything", httpbin_base_url()))
         .max_response_bytes(1_000)
         .header("X-Id", "42")
         .body("Hello, World!".as_bytes().to_vec())
@@ -50,6 +51,12 @@ fn http_client(
         .cycles_accounting(ChargeMyself::default())
         // The actual client
         .service(Client::new_with_box_error())
+}
+
+fn httpbin_base_url() -> String {
+    option_env!("HTTPBIN_URL")
+        .unwrap_or_else(|| "https://httpbin.org")
+        .to_string()
 }
 
 fn main() {}

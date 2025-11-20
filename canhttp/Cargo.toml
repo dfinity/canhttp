@@ -15,7 +15,7 @@ documentation = "https://docs.rs/canhttp"
 default = ["http"]
 http = ["dep:http", "dep:num-traits", "dep:tower-layer"]
 json = ["http", "dep:serde", "dep:serde_json"]
-multi = ["dep:ciborium", "dep:sha2", "dep:futures-channel"]
+multi = ["dep:ciborium", "dep:sha2", "dep:futures-channel", "dep:serde"]
 
 [dependencies]
 assert_matches = { workspace = true }

@@ -22,9 +22,9 @@
 //!
 //! # Examples
 //!
+//! A simple [`Service`] to make JSON requests and echo the request back:
 //! ```rust
 //! use canhttp::http::{HttpRequest, HttpResponse, json::JsonConversionLayer};
-//! use ic_cdk::api::management_canister::http_request::{CanisterHttpRequestArgument as IcHttpRequest, HttpResponse as IcHttpResponse};
 //! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
 //! use serde_json::json;
 //!
@@ -48,8 +48,17 @@
 //! assert_eq!(response.into_body()["key"], "value");
 //! # Ok(())
 //! # }
+//! ```
+//!
+//! [`Service`]: tower::Service
 
-use crate::convert::{ConvertRequest, ConvertRequestLayer, ConvertResponse, ConvertResponseLayer};
+use crate::{
+    convert::{
+        ConvertRequest, ConvertRequestLayer, ConvertResponse, ConvertResponseLayer,
+        CreateResponseFilterLayer, FilterResponse,
+    },
+    http::{HttpConversionLayer, HttpRequestConverter, HttpResponseConverter},
+};
 pub use id::{ConstantSizeId, Id};
 pub use request::{
     HttpJsonRpcRequest, JsonRequestConversionError, JsonRequestConverter, JsonRpcRequest,
@@ -59,12 +68,10 @@ pub use response::{
     HttpJsonRpcResponse, JsonResponseConversionError, JsonResponseConverter, JsonRpcError,
     JsonRpcResponse, JsonRpcResult,
 };
-pub use version::Version;
-
-use serde::de::DeserializeOwned;
-use serde::Serialize;
+use serde::{de::DeserializeOwned, Serialize};
 use std::marker::PhantomData;
-use tower_layer::Layer;
+use tower_layer::{Layer, Stack};
+pub use version::Version;
 
 #[cfg(test)]
 mod tests;
@@ -123,4 +130,71 @@ where
         );
         stack.layer(inner)
     }
+}
+
+/// Middleware that combines a [`HttpConversionLayer`], a [`JsonConversionLayer`] to create
+/// an JSON-RPC over HTTP [`Service`].
+///
+/// This middleware includes a [`ConsistentJsonRpcIdFilter`], which ensures that each response
+/// carries a valid JSON-RPC ID matching the corresponding request ID. This guarantees that the
+/// [`Service`] complies with the [JSON-RPC 2.0 specification].
+///
+/// [`Service`]: tower::Service
+/// [JSON-RPC 2.0 specification]: https://www.jsonrpc.org/specification
+#[derive(Debug)]
+pub struct JsonRpcHttpLayer<Params, Result> {
+    _marker: PhantomData<(Params, Result)>,
+}
+
+impl<Params, Result> JsonRpcHttpLayer<Params, Result> {
+    /// Returns a new [`JsonRpcHttpLayer`].
+    pub fn new() -> Self {
+        Self {
+            _marker: PhantomData,
+        }
+    }
+}
+
+impl<Params, Result> Clone for JsonRpcHttpLayer<Params, Result> {
+    fn clone(&self) -> Self {
+        Self {
+            _marker: self._marker,
+        }
+    }
+}
+
+impl<Params, Result> Default for JsonRpcHttpLayer<Params, Result> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<Params, Result, S> Layer<S> for JsonRpcHttpLayer<Params, Result>
+where
+    Params: Serialize,
+    Result: DeserializeOwned,
+{
+    type Service = FilterResponse<
+        ConvertResponse<
+            ConvertRequest<
+                ConvertResponse<ConvertRequest<S, HttpRequestConverter>, HttpResponseConverter>,
+                JsonRequestConverter<JsonRpcRequest<Params>>,
+            >,
+            JsonResponseConverter<JsonRpcResponse<Result>>,
+        >,
+        CreateJsonRpcIdFilter<Params, Result>,
+    >;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        stack(
+            HttpConversionLayer,
+            JsonConversionLayer::<JsonRpcRequest<Params>, JsonRpcResponse<Result>>::new(),
+            CreateResponseFilterLayer::new(CreateJsonRpcIdFilter::new()),
+        )
+        .layer(inner)
+    }
+}
+
+fn stack<L1, L2, L3>(l1: L1, l2: L2, l3: L3) -> Stack<L1, Stack<L2, L3>> {
+    Stack::new(l1, Stack::new(l2, l3))
 }

@@ -1,22 +1,11 @@
 [package]
-name = "http_canister"
+name = "test_fixtures"
 version = "1.0.0"
 edition.workspace = true
 
-[[bin]]
-name = "http_canister"
-path = "src/main.rs"
-
 [dependencies]
 candid = { workspace = true }
-canhttp = { path = "../../canhttp", features = ["http"] }
-http = { workspace = true }
-ic-cdk = { workspace = true }
-tower = { workspace = true }
-
-[dev-dependencies]
 ic-management-canister-types = "0.3.3"             # this version is required by pocket-ic v9
 ic-test-utilities-load-wasm = { workspace = true }
 pocket-ic = { workspace = true }
 serde = { workspace = true }
-test_fixtures = { workspace = true }

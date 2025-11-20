@@ -8,8 +8,8 @@ use serde_json::Value;
 use std::marker::PhantomData;
 use thiserror::Error;
 
-/// Convert responses of type [HttpResponse] into [`http::Response<T>`],
-/// where `T` can be deserialized.
+/// Convert responses of type [HttpResponse] into [`http::Response<T>`], where `T` is `Deserialize`
+/// by parsing the response body as JSON text bytes.
 #[derive(Debug)]
 pub struct JsonResponseConverter<T> {
     _marker: PhantomData<T>,

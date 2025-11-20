@@ -50,21 +50,30 @@ jobs:
       - name: 'Checkout'
         uses: actions/checkout@v4
       - name: 'Run unit tests'
-        run: cargo test --locked --workspace --exclude http_canister
+        run: cargo test --locked --workspace --exclude http_canister --exclude json_rpc_canister --exclude multi_canister
 
   integration-tests:
     runs-on: ubuntu-latest
+    services:
+      httpbin:
+        image: kennethreitz/httpbin
+        ports:
+          - 80:80
+    env:
+      HTTPBIN_URL: http://localhost
     steps:
       - name: 'Checkout'
         uses: actions/checkout@v4
 
-      - name: 'Build http_canister'
+      - name: 'Build example canisters'
         run: |
-          cargo build -p http_canister --target wasm32-unknown-unknown --release --locked
+          cargo build -p http_canister -p json_rpc_canister -p multi_canister --target wasm32-unknown-unknown --release --locked
 
-      - name: 'Set HTTP_CANISTER_WASM_PATH for load_wasm'
+      - name: 'Set WASM paths for load_wasm'
         run: |
           echo "HTTP_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/wasm32-unknown-unknown/release/http_canister.wasm" >> "$GITHUB_ENV"
+          echo "JSON_RPC_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/wasm32-unknown-unknown/release/json_rpc_canister.wasm" >> "$GITHUB_ENV"
+          echo "MULTI_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/wasm32-unknown-unknown/release/multi_canister.wasm" >> "$GITHUB_ENV"
 
       - name: 'Install PocketIC server'
         uses: dfinity/pocketic@main
@@ -72,4 +81,4 @@ jobs:
           pocket-ic-server-version: "9.0.2"
 
       - name: 'Run integration tests'
-        run: cargo test --locked -p http_canister
+        run: cargo test --locked -p http_canister -p json_rpc_canister
