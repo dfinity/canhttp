@@ -9,14 +9,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add multi example canister ([#48](https://github.com/dfinity/canhttp/pull/48))
 - Add `AgentRuntime` ([#36](https://github.com/dfinity/canhttp/pull/36))
-- Add missing repository in Cargo.toml (dfinity/evm-rpc-canister#425)
 
-### Changed
-
-- README ([#13](https://github.com/dfinity/canhttp/pull/13))
-- Library `canhttp` (dfinity/evm-rpc-canister#364)
-
-
-## Unreleased
+[0.1.0]: https://github.com/dfinity/canhttp/releases/tag/ic-agent-canister-runtime-v0.1.0

@@ -9,19 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add multi example canister ([#48](https://github.com/dfinity/canhttp/pull/48))
 - Add helper methods to `CyclesWalletRuntime` ([#44](https://github.com/dfinity/canhttp/pull/44))
 - Add READMEs and examples ([#42](https://github.com/dfinity/canhttp/pull/42))
 - Add `StubRuntime` ([#41](https://github.com/dfinity/canhttp/pull/41))
 - Add `CyclesWalletRuntime` ([#37](https://github.com/dfinity/canhttp/pull/37))
-- Add `ic-canister-runtime` crate ([#35](https://github.com/dfinity/canhttp/pull/35))
-- Add missing repository in Cargo.toml (dfinity/evm-rpc-canister#425)
+- Add `Runtime` crate and `IcRuntime` implementation ([#35](https://github.com/dfinity/canhttp/pull/35))
 
-### Changed
-
-- `MockHttpRuntime` into `PocketIcRuntime` ([#43](https://github.com/dfinity/canhttp/pull/43))
-- README ([#13](https://github.com/dfinity/canhttp/pull/13))
-- Library `canhttp` (dfinity/evm-rpc-canister#364)
-
-
-## Unreleased
+[0.1.0]: https://github.com/dfinity/canhttp/releases/tag/ic-canister-runtime-v0.1.0
