@@ -61,7 +61,6 @@ enum PocketIcLiveMode {
 ///
 /// let pocket_ic = PocketIc::new().await;
 /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
-///     .await
 ///     .with_http_mocks(mocks.build());
 /// # let canister_id = Principal::anonymous();
 ///
@@ -94,9 +93,9 @@ impl<'a> PocketIcRuntime<'a> {
     /// The given [`PocketIc`] instance must not be configured to use live mode.
     /// To build a [`PocketIcRuntime`] instance with [`PocketIc`] running in live mode,
     /// see [`PocketIcRuntime::with_live_mode`].
-    pub async fn new(env: &'a PocketIc, caller: Principal) -> Self {
+    pub fn new(env: &'a PocketIc, caller: Principal) -> Self {
         assert!(
-            !env.auto_progress_enabled().await,
+            !block_on_async(env.auto_progress_enabled()),
             "Auto-progress is be enabled on `PocketIc`. To use `PocketIc` in live mode, use `PocketIcRuntime::with_live_mode`"
         );
         Self {
@@ -123,9 +122,9 @@ impl<'a> PocketIcRuntime<'a> {
     ///
     /// # See also
     /// - [PocketIC live mode documentation](https://github.com/dfinity/ic/blob/f0c82237ae16745ac54dd3838b3f91ce32a6bc52/packages/pocket-ic/HOWTO.md?plain=1#L43)
-    pub async fn with_live_mode(env: &'a PocketIc, caller: Principal) -> Self {
+    pub fn with_live_mode(env: &'a PocketIc, caller: Principal) -> Self {
         assert!(
-            env.auto_progress_enabled().await,
+            block_on_async(env.auto_progress_enabled()),
             "Auto-progress must be enabled on `PocketIc` instance with `PocketIc::make_live()`"
         );
         Self {
@@ -166,7 +165,6 @@ impl<'a> PocketIcRuntime<'a> {
     ///
     /// let pocket_ic = PocketIc::new().await;
     /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
-    ///     .await
     ///     .with_http_mocks(mocks.build());
     /// # let canister_id = Principal::anonymous();
     ///
@@ -336,4 +334,14 @@ async fn tick_until_http_requests(env: &PocketIc) -> Vec<CanisterHttpRequest> {
         env.advance_time(Duration::from_nanos(1)).await;
     }
     requests
+}
+
+fn block_on_async<F: std::future::Future>(fut: F) -> F::Output {
+    // Case 1: Already inside a Tokio runtime
+    if let Ok(handle) = tokio::runtime::Handle::try_current() {
+        return tokio::task::block_in_place(|| handle.block_on(fut));
+    }
+    // Case 2: Not inside a Tokio runtime
+    let rt = tokio::runtime::Runtime::new().expect("Failed to create tokio runtime");
+    rt.block_on(fut)
 }
