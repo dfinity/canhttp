@@ -2,7 +2,7 @@ use candid::{utils::ArgumentEncoder, CandidType, Encode, Principal};
 use ic_canister_runtime::Runtime;
 use ic_management_canister_types::{CanisterId, CanisterSettings};
 use ic_pocket_canister_runtime::PocketIcRuntime;
-use pocket_ic::{nonblocking::PocketIc, PocketIcBuilder};
+use pocket_ic::PocketIc;
 use serde::de::DeserializeOwned;
 use std::{env::var, path::PathBuf, sync::Arc};
 
@@ -14,34 +14,27 @@ pub struct Setup {
 impl Setup {
     pub const DEFAULT_CONTROLLER: Principal = Principal::from_slice(&[0x9d, 0xf7, 0x02]);
 
-    pub async fn new(canister_binary_name: &str) -> Self {
-        let env = PocketIcBuilder::new()
-            .with_nns_subnet() //make_live requires NNS subnet.
-            .with_fiduciary_subnet()
-            .build_async()
-            .await;
+    pub fn new(canister_binary_name: &str) -> Self {
+        let env = PocketIc::new();
 
-        let canister_id = env
-            .create_canister_with_settings(
-                None,
-                Some(CanisterSettings {
-                    controllers: Some(vec![Self::DEFAULT_CONTROLLER]),
-                    ..CanisterSettings::default()
-                }),
-            )
-            .await;
-        env.add_cycles(canister_id, u64::MAX as u128).await;
+        let canister_id = env.create_canister_with_settings(
+            None,
+            Some(CanisterSettings {
+                controllers: Some(vec![Self::DEFAULT_CONTROLLER]),
+                ..CanisterSettings::default()
+            }),
+        );
+        env.add_cycles(canister_id, u64::MAX as u128);
 
         env.install_canister(
             canister_id,
             canister_wasm(canister_binary_name),
             Encode!().unwrap(),
             Some(Self::DEFAULT_CONTROLLER),
-        )
-        .await;
+        );
 
         let mut env = env;
-        let _endpoint = env.make_live(None).await;
+        let _endpoint = env.make_live(None);
 
         Self {
             env: Arc::new(env),

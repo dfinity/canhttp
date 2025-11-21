@@ -19,8 +19,7 @@ pub use mock::{
 };
 use pocket_ic::{
     common::rest::{CanisterHttpRequest, CanisterHttpResponse, MockCanisterHttpResponse},
-    nonblocking::PocketIc,
-    RejectResponse,
+    PocketIc, RejectResponse,
 };
 use serde::de::DeserializeOwned;
 use std::time::Duration;
@@ -42,7 +41,7 @@ const MAX_TICKS: usize = 10;
 ///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
 ///     PocketIcRuntime
 /// };
-/// use pocket_ic::nonblocking::PocketIc;
+/// use pocket_ic::PocketIc;
 /// # use candid::Principal;
 ///
 /// let mocks = MockHttpOutcallsBuilder::new()
@@ -52,7 +51,7 @@ const MAX_TICKS: usize = 10;
 ///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
 ///     );
 ///
-/// let pocket_ic = PocketIc::new().await;
+/// let pocket_ic = PocketIc::new();
 /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
 ///     .with_http_mocks(mocks.build());
 /// # let canister_id = Principal::anonymous();
@@ -105,7 +104,7 @@ impl<'a> PocketIcRuntime<'a> {
     ///     AnyCanisterHttpRequestMatcher, CanisterHttpReply, MockHttpOutcallsBuilder,
     ///     PocketIcRuntime
     /// };
-    /// use pocket_ic::nonblocking::PocketIc;
+    /// use pocket_ic::PocketIc;
     /// # use candid::Principal;
     ///
     /// let mocks = MockHttpOutcallsBuilder::new()
@@ -117,7 +116,7 @@ impl<'a> PocketIcRuntime<'a> {
     ///             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
     ///     );
     ///
-    /// let pocket_ic = PocketIc::new().await;
+    /// let pocket_ic = PocketIc::new();
     /// let runtime = PocketIcRuntime::new(&pocket_ic, Principal::anonymous())
     ///     .with_http_mocks(mocks.build());
     /// # let canister_id = Principal::anonymous();
@@ -161,7 +160,6 @@ impl Runtime for PocketIcRuntime<'_> {
                 method,
                 encode_args(args).unwrap_or_else(panic_when_encode_fails),
             )
-            .await
             .map_err(parse_reject_response)?;
         if let Some(mock) = &self.mocks {
             mock.try_lock()
@@ -169,10 +167,10 @@ impl Runtime for PocketIcRuntime<'_> {
                 .execute_http_outcall_mocks(self.env)
                 .await;
         }
-        if self.env.auto_progress_enabled().await {
-            self.env.await_call_no_ticks(message_id).await
+        if self.env.auto_progress_enabled() {
+            self.env.await_call_no_ticks(message_id)
         } else {
-            self.env.await_call(message_id).await
+            self.env.await_call(message_id)
         }
         .map(decode_call_response)
         .map_err(parse_reject_response)?
@@ -195,7 +193,6 @@ impl Runtime for PocketIcRuntime<'_> {
                 method,
                 encode_args(args).unwrap_or_else(panic_when_encode_fails),
             )
-            .await
             .map(decode_call_response)
             .map_err(parse_reject_response)?
     }
@@ -212,7 +209,7 @@ pub trait ExecuteHttpOutcallMocks: Send + Sync {
 impl ExecuteHttpOutcallMocks for MockHttpOutcalls {
     async fn execute_http_outcall_mocks(&mut self, env: &PocketIc) -> () {
         loop {
-            let pending_requests = tick_until_http_requests(env).await;
+            let pending_requests = tick_until_http_requests(env);
             if let Some(request) = pending_requests.first() {
                 let maybe_mock = { self.pop_matching(request) };
                 match maybe_mock {
@@ -223,7 +220,7 @@ impl ExecuteHttpOutcallMocks for MockHttpOutcalls {
                             response: check_response_size(request, mock.response),
                             additional_responses: vec![],
                         };
-                        env.mock_canister_http_response(mock_response).await;
+                        env.mock_canister_http_response(mock_response);
                     }
                     None => {
                         panic!("No mocks matching the request: {:?}", request);
@@ -278,15 +275,15 @@ fn panic_when_encode_fails(err: candid::error::Error) -> Vec<u8> {
     panic!("failed to encode args: {err}")
 }
 
-async fn tick_until_http_requests(env: &PocketIc) -> Vec<CanisterHttpRequest> {
+fn tick_until_http_requests(env: &PocketIc) -> Vec<CanisterHttpRequest> {
     let mut requests = Vec::new();
     for _ in 0..MAX_TICKS {
-        requests = env.get_canister_http().await;
+        requests = env.get_canister_http();
         if !requests.is_empty() {
             break;
         }
-        env.tick().await;
-        env.advance_time(Duration::from_nanos(1)).await;
+        env.tick();
+        env.advance_time(Duration::from_nanos(1));
     }
     requests
 }

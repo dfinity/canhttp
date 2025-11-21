@@ -32,7 +32,7 @@ let mocks = MockHttpOutcallsBuilder::new()
             .with_body(r#"{"data": "Hello, World!", "headers": {"X-Id": "42"}}"#)
     );
 
-let pocket_ic = PocketIc::new().await;
+let pocket_ic = PocketIc::new();
 let runtime = MockHttpRuntime::new(&pocket_ic, Principal::anonymous())
     .with_http_mocks(mocks.build());
 
