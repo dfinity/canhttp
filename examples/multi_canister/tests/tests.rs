@@ -7,7 +7,6 @@ async fn should_make_parallel_http_requests() {
 
     let http_request_results = setup
         .canister()
-        .await
         .update_call::<_, Vec<String>>("make_parallel_http_requests", ())
         .await;
 

@@ -49,13 +49,13 @@ impl Setup {
         }
     }
 
-    pub async fn runtime(&self) -> PocketIcRuntime<'_> {
-        PocketIcRuntime::with_live_mode(self.env.as_ref(), Principal::anonymous()).await
+    pub fn runtime(&self) -> PocketIcRuntime<'_> {
+        PocketIcRuntime::new(self.env.as_ref(), Principal::anonymous())
     }
 
-    pub async fn canister(&self) -> Canister {
+    pub fn canister(&self) -> Canister {
         Canister {
-            runtime: self.runtime().await,
+            runtime: self.runtime(),
             id: self.canister_id,
         }
     }

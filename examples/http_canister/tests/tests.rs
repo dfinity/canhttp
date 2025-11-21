@@ -6,7 +6,6 @@ async fn should_make_http_post_request() {
 
     let http_request_result = setup
         .canister()
-        .await
         .update_call::<_, String>("make_http_post_request", ())
         .await;
 

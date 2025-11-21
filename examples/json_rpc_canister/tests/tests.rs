@@ -6,7 +6,6 @@ async fn should_make_json_rpc_request() {
 
     let json_rpc_request_result = setup
         .canister()
-        .await
         .update_call::<_, u64>("make_json_rpc_request", ())
         .await;
 
