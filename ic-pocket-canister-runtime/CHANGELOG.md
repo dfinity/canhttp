@@ -9,18 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Add multi example canister ([#48](https://github.com/dfinity/canhttp/pull/48))
-- Add missing repository in Cargo.toml (dfinity/evm-rpc-canister#425)
+- Add `ExecuteHttpOutcallMocks` trait and support for PocketIC live mode ([#43](https://github.com/dfinity/canhttp/pull/43))
+- Add READMEs and examples ([#42](https://github.com/dfinity/canhttp/pull/42))
+- Add `PocketIcRuntime` and mock HTTP mock infrastructure ([#38](https://github.com/dfinity/canhttp/pull/38))
 
-### Changed
-
-- `MockHttpRuntime` into `PocketIcRuntime` ([#43](https://github.com/dfinity/canhttp/pull/43))
-- README ([#13](https://github.com/dfinity/canhttp/pull/13))
-- Library `canhttp` (dfinity/evm-rpc-canister#364)
-
-### Removed
-
-- Remove `PocketIcRuntime` live mode config ([#55](https://github.com/dfinity/canhttp/pull/55))
-
-
-## Unreleased
+[0.1.0]: https://github.com/dfinity/canhttp/releases/tag/ic-pocket-canister-runtime-v0.1.0

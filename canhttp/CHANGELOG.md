@@ -5,22 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.3.1] - 2025-11-21
+## [0.4.0] - 2025-11-21
 
 ### Added
 
-- Add multi example canister ([#48](https://github.com/dfinity/canhttp/pull/48))
-- Add `JsonRpcHttpLayer` ([#46](https://github.com/dfinity/canhttp/pull/46))
+- Add `JsonRpcHttpLayer` which combines the `HttpConversionLayer`, `JsonConversionLayer` and `ConsistentJsonRpcIdFilter` middlewares into a single convenient-to-use layer ([#46](https://github.com/dfinity/canhttp/pull/46))
+- Add example canisters demonstrating JSON-RPC functionalities and parallel calls ([#48](https://github.com/dfinity/canhttp/pull/48))
 
 ### Changed
 
-- Bump ic-cdk to v0.19 ([#40](https://github.com/dfinity/canhttp/pull/40))
+- Bump `ic-cdk` to v0.19.0 ([#40](https://github.com/dfinity/canhttp/pull/40))
 
 ### Fixed
 
 - Missing optional dependency on `serde` for `multi` feature ([#47](https://github.com/dfinity/canhttp/pull/47))
 
-[0.3.1]: https://github.com/dfinity/canhttp/compare/0.3.0..0.3.1
+[0.4.0]: https://github.com/dfinity/canhttp/compare/canhttp-0.3.0..canhttp-0.4.0
 
 ## [0.3.0] - 2025-10-08
 
