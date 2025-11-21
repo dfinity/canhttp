@@ -35,6 +35,10 @@ name = "canhttp"
 publish = true # enable `cargo publish`
 
 [[package]]
+name = "http_canister"
+release = false # don't process this package
+
+[[package]]
 name = "ic-agent-canister-runtime"
 #git_release_enable = false # enable GitHub releases
 publish = true # enable `cargo publish`
@@ -50,13 +54,13 @@ name = "ic-pocket-canister-runtime"
 publish = true # enable `cargo publish`
 
 [[package]]
-name = "http_canister"
-release = false # don't process this package
-
-[[package]]
 name = "json_rpc_canister"
 release = false # don't process this package
 
 [[package]]
 name = "multi_canister"
+release = false # don't process this package
+
+[[package]]
+name = "test_fixtures"
 release = false # don't process this package

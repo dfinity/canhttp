@@ -1,6 +1,6 @@
 use crate::convert::Convert;
 use crate::{MaxResponseBytesRequestExtension, TransformContextRequestExtension};
-use ic_management_canister_types::{
+use ic_cdk::management_canister::{
     HttpHeader as IcHttpHeader, HttpMethod as IcHttpMethod, HttpRequestArgs as IcHttpRequest,
     TransformContext,
 };
@@ -127,6 +127,7 @@ impl Convert<HttpRequest> for HttpRequestConverter {
             headers,
             body,
             transform,
+            is_replicated: None,
         })
     }
 }
