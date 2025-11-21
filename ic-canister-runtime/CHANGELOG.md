@@ -5,4 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.0] - 2025-11-21
+
+### Added
+
+- Add multi example canister ([#48](https://github.com/dfinity/canhttp/pull/48))
+- Add helper methods to `CyclesWalletRuntime` ([#44](https://github.com/dfinity/canhttp/pull/44))
+- Add READMEs and examples ([#42](https://github.com/dfinity/canhttp/pull/42))
+- Add `StubRuntime` ([#41](https://github.com/dfinity/canhttp/pull/41))
+- Add `CyclesWalletRuntime` ([#37](https://github.com/dfinity/canhttp/pull/37))
+- Add `ic-canister-runtime` crate ([#35](https://github.com/dfinity/canhttp/pull/35))
+- Add missing repository in Cargo.toml (dfinity/evm-rpc-canister#425)
+
+### Changed
+
+- `MockHttpRuntime` into `PocketIcRuntime` ([#43](https://github.com/dfinity/canhttp/pull/43))
+- README ([#13](https://github.com/dfinity/canhttp/pull/13))
+- Library `canhttp` (dfinity/evm-rpc-canister#364)
+
+
 ## Unreleased
