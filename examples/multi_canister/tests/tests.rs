@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 #[tokio::test]
 async fn should_make_parallel_http_requests() {
-    let setup = Setup::new("multi_canister").await;
+    let setup = Setup::new("multi_canister");
 
     let http_request_results = setup
         .canister()
