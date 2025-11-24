@@ -1,16 +1,13 @@
-use candid::Principal;
 use test_fixtures::Setup;
 
-#[test]
-fn should_make_json_rpc_request() {
-    let setup = Setup::new("json_rpc_canister");
-    let json_rpc_canister = setup.canister();
+#[tokio::test]
+async fn should_make_json_rpc_request() {
+    let setup = Setup::new("json_rpc_canister").await;
 
-    let json_rpc_request_result = json_rpc_canister.update_call::<_, u64>(
-        Principal::anonymous(),
-        "make_json_rpc_request",
-        (),
-    );
+    let json_rpc_request_result = setup
+        .canister()
+        .update_call::<_, u64>("make_json_rpc_request", ())
+        .await;
 
     assert!(json_rpc_request_result > 0);
 }

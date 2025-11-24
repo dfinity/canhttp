@@ -1066,6 +1066,7 @@ dependencies = [
  "pocket-ic",
  "serde",
  "test_fixtures",
+ "tokio",
  "tower",
 ]
 
@@ -1608,6 +1609,7 @@ dependencies = [
  "serde",
  "serde_json",
  "test_fixtures",
+ "tokio",
  "tower",
 ]
 
@@ -1765,6 +1767,7 @@ dependencies = [
  "ic-cdk",
  "serde_json",
  "test_fixtures",
+ "tokio",
  "tower",
  "uuid",
 ]
@@ -2889,7 +2892,9 @@ name = "test_fixtures"
 version = "1.0.0"
 dependencies = [
  "candid",
+ "ic-canister-runtime",
  "ic-management-canister-types 0.3.3",
+ "ic-pocket-canister-runtime",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
  "serde",
