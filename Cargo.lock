@@ -1061,7 +1061,7 @@ dependencies = [
  "canhttp",
  "http",
  "ic-cdk",
- "ic-management-canister-types 0.3.3",
+ "ic-management-canister-types 0.5.0",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
  "serde",
@@ -2756,6 +2756,7 @@ dependencies = [
  "cfg-if",
  "libc",
  "psm",
+ "windows-sys 0.52.0",
  "windows-sys 0.59.0",
 ]
 
@@ -2893,7 +2894,7 @@ version = "1.0.0"
 dependencies = [
  "candid",
  "ic-canister-runtime",
- "ic-management-canister-types 0.3.3",
+ "ic-management-canister-types 0.5.0",
  "ic-pocket-canister-runtime",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
