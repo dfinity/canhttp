@@ -196,6 +196,7 @@ impl<T> TimedSizedVec<T> {
     /// );
     /// ```
     ///
+    /// [`self.evict_expired`]: Self::evict_expired
     pub fn iter(&self) -> impl Iterator<Item = (&Timestamp, &T)> {
         self.store
             .iter()

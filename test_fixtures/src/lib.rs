@@ -53,7 +53,7 @@ impl Setup {
         PocketIcRuntime::new(self.env.as_ref(), Principal::anonymous())
     }
 
-    pub fn canister(&self) -> Canister {
+    pub fn canister(&self) -> Canister<'_> {
         Canister {
             runtime: self.runtime(),
             id: self.canister_id,

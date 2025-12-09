@@ -361,7 +361,7 @@ impl<K: Ord, V, E> MultiResults<K, V, E> {
     /// assert_eq!(iter.next(), Some((&1, Err(&"wrong"))));
     /// assert_eq!(iter.next(), None);
     /// ```
-    pub fn iter(&self) -> Iter<K, V, E> {
+    pub fn iter(&self) -> Iter<'_, K, V, E> {
         Iter {
             ok_results_iter: self.ok_results.iter(),
             errors_iter: self.errors.iter(),

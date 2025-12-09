@@ -78,7 +78,7 @@ jobs:
       - name: 'Install PocketIC server'
         uses: dfinity/pocketic@main
         with:
-          pocket-ic-server-version: "10.0.0"
+          pocket-ic-server-version: "11.0.0"
 
       - name: 'Run integration tests'
         run: cargo test --locked -p http_canister -p json_rpc_canister
