@@ -23,7 +23,7 @@ readme = "README.md"
 assert_matches = "1.5.0"
 async-trait = "0.1.88"
 candid = { version = "0.10.13" }
-canhttp = { version = "0.4.1", path = "canhttp" }
+canhttp = { version = "0.4.0", path = "canhttp" }
 ciborium = "0.2.2"
 futures-channel = "0.3.31"
 futures-util = "0.3.31"
