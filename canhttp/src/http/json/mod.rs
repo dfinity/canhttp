@@ -61,12 +61,13 @@ use crate::{
 };
 pub use id::{ConstantSizeId, Id};
 pub use request::{
-    HttpJsonRpcRequest, JsonRequestConversionError, JsonRequestConverter, JsonRpcRequest,
+    BatchJsonRpcRequest, HttpBatchJsonRpcRequest, HttpJsonRpcRequest, JsonRequestConversionError,
+    JsonRequestConverter, JsonRpcRequest,
 };
 pub use response::{
-    ConsistentJsonRpcIdFilter, ConsistentResponseIdFilterError, CreateJsonRpcIdFilter,
-    HttpJsonRpcResponse, JsonResponseConversionError, JsonResponseConverter, JsonRpcError,
-    JsonRpcResponse, JsonRpcResult,
+    BatchJsonRpcResponse, ConsistentJsonRpcIdFilter, ConsistentResponseIdFilterError,
+    CreateJsonRpcIdFilter, HttpBatchJsonRpcResponse, HttpJsonRpcResponse,
+    JsonResponseConversionError, JsonResponseConverter, JsonRpcError, JsonRpcResponse,
 };
 use serde::{de::DeserializeOwned, Serialize};
 use std::marker::PhantomData;
@@ -132,8 +133,12 @@ where
     }
 }
 
-/// Middleware that combines a [`HttpConversionLayer`], a [`JsonConversionLayer`] to create
-/// an JSON-RPC over HTTP [`Service`].
+/// Middleware that combines an [`HttpConversionLayer`] and a [`JsonConversionLayer`] to create
+/// a JSON-RPC over HTTP [`Service`].
+///
+/// This middleware can be used either with regular JSON-RPC requests and responses (i.e.
+/// [`JsonRpcRequest`] and [`JsonRpcResponse`]) or with batch JSON-RPC requests and responses
+/// (i.e. [`BatchJsonRpcRequest`] and [`BatchJsonRpcResponse`]).
 ///
 /// This middleware includes a [`ConsistentJsonRpcIdFilter`], which ensures that each response
 /// carries a valid JSON-RPC ID matching the corresponding request ID. This guarantees that the
@@ -142,11 +147,11 @@ where
 /// [`Service`]: tower::Service
 /// [JSON-RPC 2.0 specification]: https://www.jsonrpc.org/specification
 #[derive(Debug)]
-pub struct JsonRpcHttpLayer<Params, Result> {
-    _marker: PhantomData<(Params, Result)>,
+pub struct JsonRpcHttpLayer<Request, Response> {
+    _marker: PhantomData<(Request, Response)>,
 }
 
-impl<Params, Result> JsonRpcHttpLayer<Params, Result> {
+impl<Request, Response> JsonRpcHttpLayer<Request, Response> {
     /// Returns a new [`JsonRpcHttpLayer`].
     pub fn new() -> Self {
         Self {
@@ -155,7 +160,7 @@ impl<Params, Result> JsonRpcHttpLayer<Params, Result> {
     }
 }
 
-impl<Params, Result> Clone for JsonRpcHttpLayer<Params, Result> {
+impl<Request, Response> Clone for JsonRpcHttpLayer<Request, Response> {
     fn clone(&self) -> Self {
         Self {
             _marker: self._marker,
@@ -163,32 +168,32 @@ impl<Params, Result> Clone for JsonRpcHttpLayer<Params, Result> {
     }
 }
 
-impl<Params, Result> Default for JsonRpcHttpLayer<Params, Result> {
+impl<Request, Response> Default for JsonRpcHttpLayer<Request, Response> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Params, Result, S> Layer<S> for JsonRpcHttpLayer<Params, Result>
+impl<Request, Response, S> Layer<S> for JsonRpcHttpLayer<Request, Response>
 where
-    Params: Serialize,
-    Result: DeserializeOwned,
+    Request: Serialize,
+    Response: DeserializeOwned,
 {
     type Service = FilterResponse<
         ConvertResponse<
             ConvertRequest<
                 ConvertResponse<ConvertRequest<S, HttpRequestConverter>, HttpResponseConverter>,
-                JsonRequestConverter<JsonRpcRequest<Params>>,
+                JsonRequestConverter<Request>,
             >,
-            JsonResponseConverter<JsonRpcResponse<Result>>,
+            JsonResponseConverter<Response>,
         >,
-        CreateJsonRpcIdFilter<Params, Result>,
+        CreateJsonRpcIdFilter<http::Request<Request>, http::Response<Response>>,
     >;
 
     fn layer(&self, inner: S) -> Self::Service {
         stack(
             HttpConversionLayer,
-            JsonConversionLayer::<JsonRpcRequest<Params>, JsonRpcResponse<Result>>::new(),
+            JsonConversionLayer::<Request, Response>::new(),
             CreateResponseFilterLayer::new(CreateJsonRpcIdFilter::new()),
         )
         .layer(inner)

@@ -1,16 +1,24 @@
-use crate::http::json::{JsonConversionLayer, JsonRequestConverter, JsonResponseConverter};
-use crate::http::{HttpRequest, HttpResponse};
-use crate::ConvertServiceBuilder;
+use crate::{
+    http::{
+        json::{
+            ConstantSizeId, CreateJsonRpcIdFilter, HttpJsonRpcRequest, Id, JsonConversionLayer,
+            JsonRequestConverter, JsonResponseConverter, JsonRpcError, JsonRpcRequest,
+            JsonRpcResponse, Version,
+        },
+        HttpRequest, HttpResponse,
+    },
+    ConvertServiceBuilder,
+};
+use assert_matches::assert_matches;
 use http::HeaderValue;
+use proptest::{prelude::any, prop_assert_eq, proptest};
+use serde::de::DeserializeOwned;
 use serde_json::json;
+use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
 mod json_rpc {
-    use crate::http::json::{Id, JsonRpcError, JsonRpcRequest, JsonRpcResponse, Version};
-    use assert_matches::assert_matches;
-    use serde::de::DeserializeOwned;
-    use serde_json::json;
-    use std::fmt::Debug;
+    use super::*;
 
     #[test]
     fn should_parse_null_id() {
@@ -106,9 +114,7 @@ mod json_rpc {
 }
 
 mod constant_size_id {
-    use crate::http::json::{ConstantSizeId, Id};
-    use proptest::prelude::any;
-    use proptest::{prop_assert_eq, proptest};
+    use super::*;
 
     #[test]
     fn should_add_padding_to_the_left() {
@@ -251,13 +257,9 @@ async fn should_convert_both_request_and_response() {
 }
 
 mod filter_json_rpc_id {
-    use crate::http::json::{
-        CreateJsonRpcIdFilter, HttpJsonRpcRequest, Id, JsonRpcError, JsonRpcRequest,
-        JsonRpcResponse,
-    };
-    use crate::ConvertServiceBuilder;
-    use serde_json::json;
-    use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
+    use super::*;
+
+    // TODO: Add tests for batch JSON-RPC
 
     #[tokio::test]
     async fn should_check_json_rpc_id_is_consistent() {
@@ -305,7 +307,6 @@ mod filter_json_rpc_id {
             Err("expected response ID".to_string()),
         )
         .await;
-
         check(
             Id::from(42_u64),
             JsonRpcResponse::from_error(

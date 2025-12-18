@@ -14,12 +14,13 @@ documentation = "https://docs.rs/canhttp"
 [features]
 default = ["http"]
 http = ["dep:http", "dep:num-traits", "dep:tower-layer"]
-json = ["http", "dep:serde", "dep:serde_json"]
+json = ["dep:derive_more", "dep:http", "dep:serde", "dep:serde_json"]
 multi = ["dep:ciborium", "dep:sha2", "dep:futures-channel", "dep:serde"]
 
 [dependencies]
 assert_matches = { workspace = true }
 ciborium = { workspace = true, optional = true }
+derive_more = { workspace = true, optional = true }
 futures-channel = { workspace = true, optional = true }
 futures-util = { workspace = true }
 http = { workspace = true, optional = true }
