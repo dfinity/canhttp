@@ -2,12 +2,13 @@
 
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
-    http::json::{HttpJsonRpcRequest, HttpJsonRpcResponse, Id, JsonRpcHttpLayer, JsonRpcRequest},
+    http::json::{Id, JsonRpcCall, JsonRpcHttpLayer, JsonRpcRequest},
     observability::ObservabilityLayer,
     Client,
 };
 use ic_cdk::update;
-use serde::{de::DeserializeOwned, Serialize};
+use serde::de::DeserializeOwned;
+use serde::Serialize;
 use serde_json::json;
 use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
@@ -24,7 +25,7 @@ pub async fn make_json_rpc_request() -> u64 {
         .body(JsonRpcRequest::new("getSlot", json!([{"commitment": "finalized"}])).with_id(ID))
         .unwrap();
 
-    let response = json_rpc_client()
+    let response = client()
         .ready()
         .await
         .expect("Client should be ready")
@@ -39,35 +40,67 @@ pub async fn make_json_rpc_request() -> u64 {
     result.expect("JSON-RPC API call should succeed")
 }
 
-fn json_rpc_client<Params, Result>(
-) -> impl Service<HttpJsonRpcRequest<Params>, Response = HttpJsonRpcResponse<Result>, Error = BoxError>
+/// Make a batch JSON-RPC request to the Solana JSON-RPC API.
+#[update]
+pub async fn make_batch_json_rpc_request() -> Vec<u64> {
+    // Send [`getSlot`](https://solana.com/docs/rpc/http/getslot) JSON-RPC requests that fetch
+    // the current height of the Solana blockchain with different commitment requirements.
+    let requests = http::Request::post(solana_test_validator_base_url())
+        .header("Content-Type", "application/json")
+        .body(vec![
+            JsonRpcRequest::new("getSlot", json!([{"commitment": "finalized"}])).with_id(0_u64),
+            JsonRpcRequest::new("getSlot", json!([{"commitment": "confirmed"}])).with_id(1_u64),
+            JsonRpcRequest::new("getSlot", json!([{"commitment": "processed"}])).with_id(2_u64),
+        ])
+        .unwrap();
+
+    let response = client()
+        .ready()
+        .await
+        .expect("Client should be ready")
+        .call(requests)
+        .await
+        .expect("Request should succeed");
+    assert_eq!(response.status(), http::StatusCode::OK);
+
+    response
+        .into_body()
+        .into_iter()
+        .zip(0_u64..)
+        .map(|(response, expected_id)| {
+            let (id, result) = response.into_parts();
+            assert_eq!(id, expected_id.into());
+            result.expect("JSON-RPC API call should succeed")
+        })
+        .collect()
+}
+
+fn client<Request, Response>(
+) -> impl Service<http::Request<Request>, Response = http::Response<Response>, Error = BoxError>
 where
-    Params: Debug + Serialize,
-    Result: Debug + DeserializeOwned,
+    (Request, Response): JsonRpcCall<Request, Response>,
+    Request: Debug + Serialize,
+    Response: Debug + DeserializeOwned,
 {
     ServiceBuilder::new()
-        // Print request, response and errors to the console
         .layer(
             ObservabilityLayer::new()
-                .on_request(|request: &HttpJsonRpcRequest<Params>| ic_cdk::println!("{request:?}"))
-                .on_response(|_, response: &HttpJsonRpcResponse<Result>| {
+                .on_request(|request: &http::Request<Request>| ic_cdk::println!("{request:?}"))
+                .on_response(|_, response: &http::Response<Response>| {
                     ic_cdk::println!("{response:?}");
                 })
                 .on_error(|_, error: &BoxError| {
                     ic_cdk::println!("Error {error:?}");
                 }),
         )
-        // Deal with JSON-RPC over HTTP requests and responses
-        .layer(JsonRpcHttpLayer::<Params, Result>::new())
-        // Use cycles from the canister to pay for HTTPs outcalls
+        .layer(JsonRpcHttpLayer::new())
         .cycles_accounting(ChargeMyself::default())
-        // The actual client
         .service(Client::new_with_box_error())
 }
 
 fn solana_test_validator_base_url() -> String {
     option_env!("SOLANA_TEST_VALIDATOR_URL")
-        .unwrap_or_else(|| "https://api.devnet.solana.com")
+        .unwrap_or_else(|| "https://api.mainnet-beta.solana.com")
         .to_string()
 }
 

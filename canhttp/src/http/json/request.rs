@@ -1,8 +1,11 @@
-use crate::convert::Convert;
-use crate::http::json::{ConstantSizeId, Id, Version};
-use crate::http::HttpRequest;
-use http::header::CONTENT_TYPE;
-use http::HeaderValue;
+use crate::{
+    convert::Convert,
+    http::{
+        json::{ConstantSizeId, Id, Version},
+        HttpRequest,
+    },
+};
+use http::{header::CONTENT_TYPE, HeaderValue};
 use serde::{Deserialize, Serialize};
 use std::marker::PhantomData;
 use thiserror::Error;
@@ -79,10 +82,20 @@ fn add_content_type_header_if_missing(mut request: HttpRequest) -> HttpRequest {
     request
 }
 
-/// JSON-RPC request.
+/// Batch JSON-RPC request over HTTP.
+pub type HttpBatchJsonRpcRequest<T> = http::Request<BatchJsonRpcRequest<T>>;
+
+/// JSON-RPC request over HTTP.
 pub type HttpJsonRpcRequest<T> = http::Request<JsonRpcRequest<T>>;
 
-/// Body for all JSON-RPC requests, see the [specification](https://www.jsonrpc.org/specification).
+/// Batch JSON-RPC request body, see the [specification].
+///
+/// [specification]: https://www.jsonrpc.org/specification
+pub type BatchJsonRpcRequest<T> = Vec<JsonRpcRequest<T>>;
+
+/// JSON-RPC request body, see the [specification].
+///
+/// [specification]: https://www.jsonrpc.org/specification
 #[derive(Clone, Debug, Eq, PartialEq, Serialize, Deserialize)]
 pub struct JsonRpcRequest<T> {
     jsonrpc: Version,

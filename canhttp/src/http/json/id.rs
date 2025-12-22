@@ -1,13 +1,15 @@
 use serde::{Deserialize, Serialize};
-use std::fmt::{Display, Formatter};
-use std::num::ParseIntError;
-use std::str::FromStr;
+use std::{
+    fmt::{Display, Formatter},
+    num::ParseIntError,
+    str::FromStr,
+};
 
 /// An identifier established by the Client that MUST contain a String, Number, or NULL value if included.
 ///
 /// If it is not included it is assumed to be a notification.
 /// The value SHOULD normally not be Null.
-#[derive(Clone, Debug, Eq, PartialEq, Deserialize, Serialize)]
+#[derive(Clone, Debug, Eq, PartialEq, PartialOrd, Ord, Deserialize, Serialize)]
 #[serde(untagged)]
 pub enum Id {
     /// Numeric ID.
