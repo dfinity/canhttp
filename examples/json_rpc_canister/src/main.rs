@@ -1,11 +1,15 @@
 //! Example of a canister using `canhttp` to issue JSON-RPC HTTP requests.
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
-    http::json::{Id, JsonRpcHttpLayer, JsonRpcRequest},
+    http::json::{
+        HttpBatchJsonRpcResponse, HttpJsonRpcResponse, Id, JsonRpcHttpLayer, JsonRpcPayload,
+        JsonRpcRequest,
+    },
     observability::ObservabilityLayer,
     Client,
 };
 use ic_cdk::update;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
@@ -22,17 +26,7 @@ pub async fn make_json_rpc_request() -> u64 {
         .body(JsonRpcRequest::new("getSlot", json!([{"commitment": "finalized"}])).with_id(ID))
         .unwrap();
 
-    // A client with layers to:
-    //  * Print request, response and errors to the console
-    //  * Handle JSON-RPC over HTTP requests and responses
-    //  * Use cycles from the canister to pay for HTTPs outcalls
-    let mut client = ServiceBuilder::new()
-        .layer(observability_layer())
-        .layer(JsonRpcHttpLayer::new())
-        .cycles_accounting(ChargeMyself::default())
-        .service(Client::new_with_box_error());
-
-    let response = client
+    let response: HttpJsonRpcResponse<u64> = client()
         .ready()
         .await
         .expect("Client should be ready")
@@ -61,17 +55,7 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         ])
         .unwrap();
 
-    // A client with layers to:
-    //  * Print request, response and errors to the console
-    //  * Handle JSON-RPC over HTTP requests and responses
-    //  * Use cycles from the canister to pay for HTTPs outcalls
-    let mut client = ServiceBuilder::new()
-        .layer(observability_layer())
-        .layer(JsonRpcHttpLayer::new())
-        .cycles_accounting(ChargeMyself::default())
-        .service(Client::new_with_box_error());
-
-    let response = client
+    let response: HttpBatchJsonRpcResponse<u64> = client()
         .ready()
         .await
         .expect("Client should be ready")
@@ -92,20 +76,27 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         .collect()
 }
 
-#[allow(clippy::type_complexity)]
-fn observability_layer<Request: Debug, Response: Debug>() -> ObservabilityLayer<
-    impl Fn(&Request) + Clone,
-    impl Fn((), &Response) + Clone,
-    impl Fn((), &BoxError) + Clone,
-> {
-    ObservabilityLayer::new()
-        .on_request(|request: &Request| ic_cdk::println!("{request:?}"))
-        .on_response(|_, response: &Response| {
-            ic_cdk::println!("{response:?}");
-        })
-        .on_error(|_, error: &BoxError| {
-            ic_cdk::println!("Error {error:?}");
-        })
+fn client<Request, Response>(
+) -> impl Service<http::Request<Request>, Response = http::Response<Response>, Error = BoxError>
+where
+    (): JsonRpcPayload<Request, Response>,
+    Request: Debug + Serialize,
+    Response: Debug + DeserializeOwned,
+{
+    ServiceBuilder::new()
+        .layer(
+            ObservabilityLayer::new()
+                .on_request(|request: &http::Request<Request>| ic_cdk::println!("{request:?}"))
+                .on_response(|_, response: &http::Response<Response>| {
+                    ic_cdk::println!("{response:?}");
+                })
+                .on_error(|_, error: &BoxError| {
+                    ic_cdk::println!("Error {error:?}");
+                }),
+        )
+        .layer(JsonRpcHttpLayer::new())
+        .cycles_accounting(ChargeMyself::default())
+        .service(Client::new_with_box_error())
 }
 
 fn solana_test_validator_base_url() -> String {
