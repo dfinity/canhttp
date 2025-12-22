@@ -2,16 +2,14 @@
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
     http::json::{
-        HttpBatchJsonRpcResponse, HttpJsonRpcResponse, Id, JsonRpcHttpLayer, JsonRpcPayload,
-        JsonRpcRequest,
+        BatchJsonRpcRequest, BatchJsonRpcResponse, Id, JsonRpcCall, JsonRpcHttpLayer,
+        JsonRpcRequest, JsonRpcResponse,
     },
     observability::ObservabilityLayer,
     Client,
 };
 use ic_cdk::update;
-use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
-use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
 /// Make a JSON-RPC request to the Solana JSON-RPC API.
@@ -26,7 +24,7 @@ pub async fn make_json_rpc_request() -> u64 {
         .body(JsonRpcRequest::new("getSlot", json!([{"commitment": "finalized"}])).with_id(ID))
         .unwrap();
 
-    let response: HttpJsonRpcResponse<u64> = client()
+    let response = client::<(JsonRpcRequest<serde_json::Value>, JsonRpcResponse<u64>)>()
         .ready()
         .await
         .expect("Client should be ready")
@@ -55,13 +53,16 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         ])
         .unwrap();
 
-    let response: HttpBatchJsonRpcResponse<u64> = client()
-        .ready()
-        .await
-        .expect("Client should be ready")
-        .call(requests)
-        .await
-        .expect("Request should succeed");
+    let response = client::<(
+        BatchJsonRpcRequest<serde_json::Value>,
+        BatchJsonRpcResponse<u64>,
+    )>()
+    .ready()
+    .await
+    .expect("Client should be ready")
+    .call(requests)
+    .await
+    .expect("Request should succeed");
     assert_eq!(response.status(), http::StatusCode::OK);
 
     response
@@ -76,25 +77,28 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         .collect()
 }
 
-fn client<Request, Response>(
-) -> impl Service<http::Request<Request>, Response = http::Response<Response>, Error = BoxError>
+fn client<Call>() -> impl Service<
+    http::Request<Call::Request>,
+    Response = http::Response<Call::Response>,
+    Error = BoxError,
+>
 where
-    (): JsonRpcPayload<Request, Response>,
-    Request: Debug + Serialize,
-    Response: Debug + DeserializeOwned,
+    Call: JsonRpcCall,
 {
     ServiceBuilder::new()
         .layer(
             ObservabilityLayer::new()
-                .on_request(|request: &http::Request<Request>| ic_cdk::println!("{request:?}"))
-                .on_response(|_, response: &http::Response<Response>| {
+                .on_request(|request: &http::Request<Call::Request>| {
+                    ic_cdk::println!("{request:?}")
+                })
+                .on_response(|_, response: &http::Response<Call::Response>| {
                     ic_cdk::println!("{response:?}");
                 })
                 .on_error(|_, error: &BoxError| {
                     ic_cdk::println!("Error {error:?}");
                 }),
         )
-        .layer(JsonRpcHttpLayer::new())
+        .layer(JsonRpcHttpLayer::<Call>::new())
         .cycles_accounting(ChargeMyself::default())
         .service(Client::new_with_box_error())
 }

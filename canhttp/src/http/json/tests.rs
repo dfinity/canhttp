@@ -152,6 +152,8 @@ mod constant_size_id {
     }
 }
 
+// TODO: Add tests for batch JSON-RPC
+
 #[tokio::test]
 async fn should_convert_json_request() {
     let url = "https://internetcomputer.org/";
@@ -169,6 +171,8 @@ async fn should_convert_json_request() {
         converted_request.into_body()
     );
 }
+
+// TODO: Add tests for batch JSON-RPC
 
 #[tokio::test]
 async fn should_add_content_type_header_if_missing() {
@@ -221,6 +225,8 @@ async fn should_add_content_type_header_if_missing() {
     }
 }
 
+// TODO: Add tests for batch JSON-RPC
+
 #[tokio::test]
 async fn should_convert_json_response() {
     let mut service = ServiceBuilder::new()
@@ -234,6 +240,8 @@ async fn should_convert_json_response() {
 
     assert_eq!(converted_response.into_body(), expected_response);
 }
+
+// TODO: Add tests for batch JSON-RPC
 
 #[tokio::test]
 async fn should_convert_both_request_and_response() {
@@ -275,7 +283,10 @@ mod filter_json_rpc_id {
                 )
                 .unwrap();
             let mut service = ServiceBuilder::new()
-                .filter_response(CreateJsonRpcIdFilter::new())
+                .filter_response(CreateJsonRpcIdFilter::<(
+                    JsonRpcRequest<_>,
+                    JsonRpcResponse<_>,
+                )>::new())
                 .service_fn(|_request: HttpJsonRpcRequest<serde_json::Value>| async {
                     Ok::<_, BoxError>(http::Response::new(response.clone()))
                 });
@@ -339,7 +350,10 @@ mod filter_json_rpc_id {
     #[should_panic(expected = "ERROR: a null request ID")]
     async fn should_panic_when_request_id_null() {
         let mut service = ServiceBuilder::new()
-            .filter_response(CreateJsonRpcIdFilter::new())
+            .filter_response(CreateJsonRpcIdFilter::<(
+                JsonRpcRequest<_>,
+                JsonRpcResponse<_>,
+            )>::new())
             .service_fn(
                 |request: HttpJsonRpcRequest<serde_json::Value>| async move {
                     let id = request.body().id();
