@@ -288,11 +288,11 @@ pub enum ConsistentResponseIdFilterError {
 }
 
 /// Create [`ConsistentJsonRpcIdFilter`] for each request.
-pub struct CreateJsonRpcIdFilter<Call> {
-    _marker: PhantomData<Call>,
+pub struct CreateJsonRpcIdFilter<Request, Response> {
+    _marker: PhantomData<(Request, Response)>,
 }
 
-impl<Call> CreateJsonRpcIdFilter<Call> {
+impl<Request, Response> CreateJsonRpcIdFilter<Request, Response> {
     /// Create a new instance of [`CreateJsonRpcIdFilter`]
     pub fn new() -> Self {
         Self {
@@ -301,7 +301,7 @@ impl<Call> CreateJsonRpcIdFilter<Call> {
     }
 }
 
-impl<Call> Clone for CreateJsonRpcIdFilter<Call> {
+impl<Request, Response> Clone for CreateJsonRpcIdFilter<Request, Response> {
     fn clone(&self) -> Self {
         Self {
             _marker: self._marker,
@@ -309,38 +309,42 @@ impl<Call> Clone for CreateJsonRpcIdFilter<Call> {
     }
 }
 
-impl<Call> Default for CreateJsonRpcIdFilter<Call> {
+impl<Request, Response> Default for CreateJsonRpcIdFilter<Request, Response> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Call> CreateResponseFilter<http::Request<Call::Request>, http::Response<Call::Response>>
-    for CreateJsonRpcIdFilter<Call>
+impl<Request, Response> CreateResponseFilter<http::Request<Request>, http::Response<Response>>
+    for CreateJsonRpcIdFilter<Request, Response>
 where
-    Call: JsonRpcCall,
+    (Request, Response): JsonRpcCall<Request, Response>,
+    Request: Serialize,
+    Response: DeserializeOwned,
 {
-    type Filter = ConsistentJsonRpcIdFilter<Call>;
+    type Filter = ConsistentJsonRpcIdFilter<Request, Response>;
     type Error = ConsistentResponseIdFilterError;
 
-    fn create_filter(&self, request: &http::Request<Call::Request>) -> Self::Filter {
+    fn create_filter(&self, request: &http::Request<Request>) -> Self::Filter {
         ConsistentJsonRpcIdFilter::new(request)
     }
 }
 
 /// Ensure that the ID of the response is consistent with the one from the request
 /// that is stored internally.
-pub struct ConsistentJsonRpcIdFilter<Call>
+pub struct ConsistentJsonRpcIdFilter<Request, Response>
 where
-    Call: JsonRpcCall,
+    (Request, Response): JsonRpcCall<Request, Response>,
 {
-    request_id: Call::Id,
-    _marker: PhantomData<Call>,
+    request_id: <(Request, Response) as JsonRpcCall<Request, Response>>::Id,
+    _marker: PhantomData<(Request, Response)>,
 }
 
-impl<Call> ConsistentJsonRpcIdFilter<Call>
+impl<Request, Response> ConsistentJsonRpcIdFilter<Request, Response>
 where
-    Call: JsonRpcCall,
+    (Request, Response): JsonRpcCall<Request, Response>,
+    Request: Serialize,
+    Response: DeserializeOwned,
 {
     /// Creates a new JSON-RPC filter to ensure that the response ID(s) match(es) the ID(s) of the
     /// given request.
@@ -351,24 +355,28 @@ where
     /// This is because a request ID with value [`Id::Null`] indicates a Notification,
     /// which indicates that the client does not care about the response (see the
     /// JSON-RPC [specification](https://www.jsonrpc.org/specification)).
-    fn new(request: &http::Request<Call::Request>) -> Self {
+    fn new(request: &http::Request<Request>) -> Self {
         Self {
-            request_id: Call::expected_response_id(request),
+            request_id: <(Request, Response)>::expected_response_id(request),
             _marker: PhantomData,
         }
     }
 }
 
-impl<Call> Filter<http::Response<Call::Response>> for ConsistentJsonRpcIdFilter<Call>
+impl<Request, Response> Filter<http::Response<Response>>
+    for ConsistentJsonRpcIdFilter<Request, Response>
 where
-    Call: JsonRpcCall,
+    (Request, Response): JsonRpcCall<Request, Response>,
+    Request: Serialize,
+    Response: DeserializeOwned,
 {
     type Error = ConsistentResponseIdFilterError;
 
     fn filter(
         &mut self,
-        response: http::Response<Call::Response>,
-    ) -> Result<http::Response<Call::Response>, Self::Error> {
-        Call::has_consistent_response_id(&self.request_id, &response).map(|_| response)
+        response: http::Response<Response>,
+    ) -> Result<http::Response<Response>, Self::Error> {
+        <(Request, Response)>::has_consistent_response_id(&self.request_id, &response)
+            .map(|_| response)
     }
 }

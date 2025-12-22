@@ -148,11 +148,11 @@ where
 /// [`Service`]: tower::Service
 /// [JSON-RPC 2.0 specification]: https://www.jsonrpc.org/specification
 #[derive(Debug)]
-pub struct JsonRpcHttpLayer<Call> {
-    _marker: PhantomData<Call>,
+pub struct JsonRpcHttpLayer<Request, Response> {
+    _marker: PhantomData<(Request, Response)>,
 }
 
-impl<Call> JsonRpcHttpLayer<Call> {
+impl<Request, Response> JsonRpcHttpLayer<Request, Response> {
     /// Returns a new [`JsonRpcHttpLayer`].
     pub fn new() -> Self {
         Self {
@@ -161,7 +161,7 @@ impl<Call> JsonRpcHttpLayer<Call> {
     }
 }
 
-impl<Call> Clone for JsonRpcHttpLayer<Call> {
+impl<Request, Response> Clone for JsonRpcHttpLayer<Request, Response> {
     fn clone(&self) -> Self {
         Self {
             _marker: self._marker,
@@ -169,31 +169,33 @@ impl<Call> Clone for JsonRpcHttpLayer<Call> {
     }
 }
 
-impl<Call> Default for JsonRpcHttpLayer<Call> {
+impl<Request, Response> Default for JsonRpcHttpLayer<Request, Response> {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<Call, S> Layer<S> for JsonRpcHttpLayer<Call>
+impl<Request, Response, S> Layer<S> for JsonRpcHttpLayer<Request, Response>
 where
-    Call: JsonRpcCall,
+    (Request, Response): JsonRpcCall<Request, Response>,
+    Request: Serialize,
+    Response: DeserializeOwned,
 {
     type Service = FilterResponse<
         ConvertResponse<
             ConvertRequest<
                 ConvertResponse<ConvertRequest<S, HttpRequestConverter>, HttpResponseConverter>,
-                JsonRequestConverter<Call::Request>,
+                JsonRequestConverter<Request>,
             >,
-            JsonResponseConverter<Call::Response>,
+            JsonResponseConverter<Response>,
         >,
-        CreateJsonRpcIdFilter<Call>,
+        CreateJsonRpcIdFilter<Request, Response>,
     >;
 
     fn layer(&self, inner: S) -> Self::Service {
         stack(
             HttpConversionLayer,
-            JsonConversionLayer::<Call::Request, Call::Response>::new(),
+            JsonConversionLayer::<Request, Response>::new(),
             CreateResponseFilterLayer::new(CreateJsonRpcIdFilter::new()),
         )
         .layer(inner)
@@ -208,11 +210,7 @@ fn stack<L1, L2, L3>(l1: L1, l2: L2, l3: L3) -> Stack<L1, Stack<L2, L3>> {
 ///
 /// Defines the request and response types, the ID type, and how to generate
 /// and verify that a response matches a request.
-pub trait JsonRpcCall {
-    /// The request type.
-    type Request: Debug + Serialize;
-    /// The response type.
-    type Response: Debug + DeserializeOwned;
+pub trait JsonRpcCall<Request, Response> {
     /// The type used to identify requests and responses.
     type Id: Debug;
 
@@ -222,7 +220,7 @@ pub trait JsonRpcCall {
     ///
     /// Panics if the request ID is [`Id::Null`], which indicates a notification
     /// (a request for which no response is expected).
-    fn expected_response_id(request: &http::Request<Self::Request>) -> Self::Id;
+    fn expected_response_id(request: &http::Request<Request>) -> Self::Id;
 
     /// Checks that a response has a consistent ID for the given request ID.
     ///
@@ -230,17 +228,13 @@ pub trait JsonRpcCall {
     /// `ConsistentResponseIdFilterError` if it is not.
     fn has_consistent_response_id(
         request_id: &Self::Id,
-        response: &http::Response<Self::Response>,
+        response: &http::Response<Response>,
     ) -> Result<(), ConsistentResponseIdFilterError>;
 }
 
-impl<Params, Result> JsonRpcCall for (JsonRpcRequest<Params>, JsonRpcResponse<Result>)
-where
-    Params: Debug + Serialize,
-    Result: Debug + DeserializeOwned,
+impl<Params, Result> JsonRpcCall<JsonRpcRequest<Params>, JsonRpcResponse<Result>>
+    for (JsonRpcRequest<Params>, JsonRpcResponse<Result>)
 {
-    type Request = JsonRpcRequest<Params>;
-    type Response = JsonRpcResponse<Result>;
     type Id = Id;
 
     fn expected_response_id(request: &HttpJsonRpcRequest<Params>) -> Self::Id {
@@ -264,13 +258,9 @@ where
     }
 }
 
-impl<Params, Result> JsonRpcCall for (BatchJsonRpcRequest<Params>, BatchJsonRpcResponse<Result>)
-where
-    Params: Debug + Serialize,
-    Result: Debug + DeserializeOwned,
+impl<Params, Result> JsonRpcCall<BatchJsonRpcRequest<Params>, BatchJsonRpcResponse<Result>>
+    for (BatchJsonRpcRequest<Params>, BatchJsonRpcResponse<Result>)
 {
-    type Request = BatchJsonRpcRequest<Params>;
-    type Response = BatchJsonRpcResponse<Result>;
     type Id = BTreeSet<Id>;
 
     fn expected_response_id(requests: &HttpBatchJsonRpcRequest<Params>) -> Self::Id {

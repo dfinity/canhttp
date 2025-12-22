@@ -283,10 +283,7 @@ mod filter_json_rpc_id {
                 )
                 .unwrap();
             let mut service = ServiceBuilder::new()
-                .filter_response(CreateJsonRpcIdFilter::<(
-                    JsonRpcRequest<_>,
-                    JsonRpcResponse<_>,
-                )>::new())
+                .filter_response(CreateJsonRpcIdFilter::new())
                 .service_fn(|_request: HttpJsonRpcRequest<serde_json::Value>| async {
                     Ok::<_, BoxError>(http::Response::new(response.clone()))
                 });
@@ -350,10 +347,7 @@ mod filter_json_rpc_id {
     #[should_panic(expected = "ERROR: a null request ID")]
     async fn should_panic_when_request_id_null() {
         let mut service = ServiceBuilder::new()
-            .filter_response(CreateJsonRpcIdFilter::<(
-                JsonRpcRequest<_>,
-                JsonRpcResponse<_>,
-            )>::new())
+            .filter_response(CreateJsonRpcIdFilter::new())
             .service_fn(
                 |request: HttpJsonRpcRequest<serde_json::Value>| async move {
                     let id = request.body().id();
