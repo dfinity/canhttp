@@ -1,7 +1,8 @@
+use crate::http::json::BatchJsonRpcRequest;
 use crate::{
     convert::{Convert, CreateResponseFilter, Filter},
     http::{
-        json::{Id, JsonRpcCall, Version},
+        json::{HttpBatchJsonRpcRequest, HttpJsonRpcRequest, Id, JsonRpcRequest, Version},
         HttpResponse,
     },
 };
@@ -315,39 +316,51 @@ impl<Request, Response> Default for CreateJsonRpcIdFilter<Request, Response> {
     }
 }
 
-impl<Request, Response> CreateResponseFilter<http::Request<Request>, http::Response<Response>>
-    for CreateJsonRpcIdFilter<Request, Response>
+impl<I, O> CreateResponseFilter<HttpJsonRpcRequest<I>, HttpJsonRpcResponse<O>>
+    for CreateJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>>
 where
-    (Request, Response): JsonRpcCall<Request, Response>,
-    Request: Serialize,
-    Response: DeserializeOwned,
+    JsonRpcRequest<I>: Serialize,
+    JsonRpcRequest<I>: DeserializeOwned,
 {
-    type Filter = ConsistentJsonRpcIdFilter<Request, Response>;
+    type Filter = ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>, Id>;
     type Error = ConsistentResponseIdFilterError;
 
-    fn create_filter(&self, request: &http::Request<Request>) -> Self::Filter {
-        ConsistentJsonRpcIdFilter::new(request)
+    fn create_filter(&self, request: &HttpJsonRpcRequest<I>) -> Self::Filter {
+        let request_id = expected_response_id(request.body());
+        ConsistentJsonRpcIdFilter::new(request_id)
+    }
+}
+
+impl<I, O> CreateResponseFilter<HttpBatchJsonRpcRequest<I>, HttpBatchJsonRpcResponse<O>>
+    for CreateJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>>
+where
+    BatchJsonRpcRequest<I>: Serialize,
+    BatchJsonRpcResponse<I>: DeserializeOwned,
+{
+    type Filter =
+        ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>, BTreeSet<Id>>;
+    type Error = ConsistentResponseIdFilterError;
+
+    fn create_filter(&self, requests: &HttpBatchJsonRpcRequest<I>) -> Self::Filter {
+        let request_id = requests
+            .body()
+            .iter()
+            .map(expected_response_id)
+            .collect::<BTreeSet<_>>();
+        ConsistentJsonRpcIdFilter::new(request_id)
     }
 }
 
 /// Ensure that the ID of the response is consistent with the one from the request
 /// that is stored internally.
-pub struct ConsistentJsonRpcIdFilter<Request, Response>
-where
-    (Request, Response): JsonRpcCall<Request, Response>,
-{
-    request_id: <(Request, Response) as JsonRpcCall<Request, Response>>::Id,
+pub struct ConsistentJsonRpcIdFilter<Request, Response, Id> {
+    request_id: Id,
     _marker: PhantomData<(Request, Response)>,
 }
 
-impl<Request, Response> ConsistentJsonRpcIdFilter<Request, Response>
-where
-    (Request, Response): JsonRpcCall<Request, Response>,
-    Request: Serialize,
-    Response: DeserializeOwned,
-{
-    /// Creates a new JSON-RPC filter to ensure that the response ID(s) match(es) the ID(s) of the
-    /// given request.
+impl<Request, Response, Id> ConsistentJsonRpcIdFilter<Request, Response, Id> {
+    /// Creates a new JSON-RPC filter to ensure that the response ID(s) match(es) the given request
+    /// ID(s).
     ///
     /// # Panics
     ///
@@ -355,28 +368,98 @@ where
     /// This is because a request ID with value [`Id::Null`] indicates a Notification,
     /// which indicates that the client does not care about the response (see the
     /// JSON-RPC [specification](https://www.jsonrpc.org/specification)).
-    fn new(request: &http::Request<Request>) -> Self {
+    fn new(request_id: Id) -> Self {
         Self {
-            request_id: <(Request, Response)>::expected_response_id(request),
+            request_id,
             _marker: PhantomData,
         }
     }
 }
 
-impl<Request, Response> Filter<http::Response<Response>>
-    for ConsistentJsonRpcIdFilter<Request, Response>
+impl<I, O> Filter<HttpJsonRpcResponse<O>>
+    for ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>, Id>
 where
-    (Request, Response): JsonRpcCall<Request, Response>,
-    Request: Serialize,
-    Response: DeserializeOwned,
+    JsonRpcRequest<I>: Serialize,
+    JsonRpcRequest<I>: DeserializeOwned,
 {
     type Error = ConsistentResponseIdFilterError;
 
     fn filter(
         &mut self,
-        response: http::Response<Response>,
-    ) -> Result<http::Response<Response>, Self::Error> {
-        <(Request, Response)>::has_consistent_response_id(&self.request_id, &response)
-            .map(|_| response)
+        response: HttpJsonRpcResponse<O>,
+    ) -> Result<HttpJsonRpcResponse<O>, Self::Error> {
+        let response_id = response.body().id();
+        if &self.request_id == response_id || should_have_null_id(response.body()) {
+            Ok(response)
+        } else {
+            Err(ConsistentResponseIdFilterError::InconsistentId {
+                status: response.status().into(),
+                request_id: self.request_id.clone(),
+                response_id: response_id.clone(),
+            })
+        }
+    }
+}
+
+impl<I, O> Filter<HttpBatchJsonRpcResponse<O>>
+    for ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>, BTreeSet<Id>>
+where
+    BatchJsonRpcRequest<I>: Serialize,
+    BatchJsonRpcResponse<I>: DeserializeOwned,
+{
+    type Error = ConsistentResponseIdFilterError;
+
+    fn filter(
+        &mut self,
+        responses: HttpBatchJsonRpcResponse<O>,
+    ) -> Result<HttpBatchJsonRpcResponse<O>, Self::Error> {
+        let request_ids = &self.request_id;
+
+        let expected_missing_id_count = responses
+            .body()
+            .iter()
+            .filter(|response| should_have_null_id(response))
+            .count();
+
+        let response_ids = responses
+            .body()
+            .iter()
+            .map(|response| response.id())
+            .collect::<BTreeSet<_>>();
+
+        let missing_id_count = request_ids
+            .iter()
+            .filter(|id| !response_ids.contains(id))
+            .count();
+
+        let unexpected_id_count = response_ids
+            .iter()
+            .filter(|id| !request_ids.contains(id))
+            .count();
+
+        if (unexpected_id_count == 0) && (missing_id_count <= expected_missing_id_count) {
+            Ok(responses)
+        } else {
+            Err(ConsistentResponseIdFilterError::InconsistentBatchIds {
+                status: responses.status().into(),
+                request_ids: request_ids.clone(),
+                response_ids: response_ids.into_iter().cloned().collect(),
+            })
+        }
+    }
+}
+
+// From the [JSON-RPC specification](https://www.jsonrpc.org/specification):
+// If there was an error in detecting the id in the Request object
+// (e.g. Parse error/Invalid Request), it MUST be Null.
+fn should_have_null_id<T>(response: &JsonRpcResponse<T>) -> bool {
+    let (response_id, result) = response.as_parts();
+    response_id.is_null() && result.is_err_and(|e| e.is_parse_error() || e.is_invalid_request())
+}
+
+fn expected_response_id<T>(request: &JsonRpcRequest<T>) -> Id {
+    match request.id() {
+        Id::Null => panic!("ERROR: a null request ID is a notification that indicates that the client is not interested in the response."),
+        id @ (Id::Number(_) | Id::String(_)) => id.clone()
     }
 }

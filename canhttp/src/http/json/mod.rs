@@ -51,6 +51,7 @@
 //! ```
 //!
 //! [`Service`]: tower::Service
+use crate::convert::CreateResponseFilter;
 use crate::{
     convert::{
         ConvertRequest, ConvertRequestLayer, ConvertResponse, ConvertResponseLayer,
@@ -69,9 +70,7 @@ pub use response::{
     JsonResponseConversionError, JsonResponseConverter, JsonRpcError, JsonRpcResponse,
 };
 use serde::{de::DeserializeOwned, Serialize};
-use std::collections::BTreeSet;
-use std::fmt::Debug;
-use std::marker::PhantomData;
+use std::{fmt::Debug, marker::PhantomData};
 use tower_layer::{Layer, Stack};
 pub use version::Version;
 
@@ -177,9 +176,10 @@ impl<Request, Response> Default for JsonRpcHttpLayer<Request, Response> {
 
 impl<Request, Response, S> Layer<S> for JsonRpcHttpLayer<Request, Response>
 where
-    (Request, Response): JsonRpcCall<Request, Response>,
     Request: Serialize,
     Response: DeserializeOwned,
+    CreateJsonRpcIdFilter<Request, Response>:
+        CreateResponseFilter<http::Request<Request>, http::Response<Response>>,
 {
     type Service = FilterResponse<
         ConvertResponse<
@@ -204,122 +204,4 @@ where
 
 fn stack<L1, L2, L3>(l1: L1, l2: L2, l3: L3) -> Stack<L1, Stack<L2, L3>> {
     Stack::new(l1, Stack::new(l2, l3))
-}
-
-/// Represents a JSON-RPC request/response pair and its ID semantics.
-///
-/// Defines the request and response types, the ID type, and how to generate
-/// and verify that a response matches a request.
-pub trait JsonRpcCall<Request, Response> {
-    /// The type used to identify requests and responses.
-    type Id: Debug;
-
-    /// Returns the expected response ID for a given request.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the request ID is [`Id::Null`], which indicates a notification
-    /// (a request for which no response is expected).
-    fn expected_response_id(request: &http::Request<Request>) -> Self::Id;
-
-    /// Checks that a response has a consistent ID for the given request ID.
-    ///
-    /// Returns `Ok(())` if the response ID is consistent, or
-    /// `ConsistentResponseIdFilterError` if it is not.
-    fn has_consistent_response_id(
-        request_id: &Self::Id,
-        response: &http::Response<Response>,
-    ) -> Result<(), ConsistentResponseIdFilterError>;
-}
-
-impl<Params, Result> JsonRpcCall<JsonRpcRequest<Params>, JsonRpcResponse<Result>>
-    for (JsonRpcRequest<Params>, JsonRpcResponse<Result>)
-{
-    type Id = Id;
-
-    fn expected_response_id(request: &HttpJsonRpcRequest<Params>) -> Self::Id {
-        expected_response_id(request.body())
-    }
-
-    fn has_consistent_response_id(
-        request_id: &Id,
-        response: &HttpJsonRpcResponse<Result>,
-    ) -> std::result::Result<(), ConsistentResponseIdFilterError> {
-        let response_id = response.body().id();
-        if request_id == response_id || should_have_null_id(response.body()) {
-            Ok(())
-        } else {
-            Err(ConsistentResponseIdFilterError::InconsistentId {
-                status: response.status().into(),
-                request_id: request_id.clone(),
-                response_id: response_id.clone(),
-            })
-        }
-    }
-}
-
-impl<Params, Result> JsonRpcCall<BatchJsonRpcRequest<Params>, BatchJsonRpcResponse<Result>>
-    for (BatchJsonRpcRequest<Params>, BatchJsonRpcResponse<Result>)
-{
-    type Id = BTreeSet<Id>;
-
-    fn expected_response_id(requests: &HttpBatchJsonRpcRequest<Params>) -> Self::Id {
-        requests
-            .body()
-            .iter()
-            .map(expected_response_id)
-            .collect::<BTreeSet<_>>()
-    }
-
-    fn has_consistent_response_id(
-        request_ids: &Self::Id,
-        responses: &HttpBatchJsonRpcResponse<Result>,
-    ) -> std::result::Result<(), ConsistentResponseIdFilterError> {
-        let expected_missing_id_count = responses
-            .body()
-            .iter()
-            .filter(|response| should_have_null_id(response))
-            .count();
-
-        let response_ids = responses
-            .body()
-            .iter()
-            .map(|response| response.id())
-            .collect::<BTreeSet<_>>();
-
-        let missing_id_count = request_ids
-            .iter()
-            .filter(|id| !response_ids.contains(id))
-            .count();
-
-        let unexpected_id_count = response_ids
-            .iter()
-            .filter(|id| !request_ids.contains(id))
-            .count();
-
-        if (unexpected_id_count == 0) && (missing_id_count <= expected_missing_id_count) {
-            Ok(())
-        } else {
-            Err(ConsistentResponseIdFilterError::InconsistentBatchIds {
-                status: responses.status().into(),
-                request_ids: request_ids.clone(),
-                response_ids: response_ids.into_iter().cloned().collect(),
-            })
-        }
-    }
-}
-
-// From the [JSON-RPC specification](https://www.jsonrpc.org/specification):
-// If there was an error in detecting the id in the Request object
-// (e.g. Parse error/Invalid Request), it MUST be Null.
-fn should_have_null_id<T>(response: &JsonRpcResponse<T>) -> bool {
-    let (response_id, result) = response.as_parts();
-    response_id.is_null() && result.is_err_and(|e| e.is_parse_error() || e.is_invalid_request())
-}
-
-fn expected_response_id<T>(request: &JsonRpcRequest<T>) -> Id {
-    match request.id() {
-        Id::Null => panic!("ERROR: a null request ID is a notification that indicates that the client is not interested in the response."),
-        id @ (Id::Number(_) | Id::String(_)) => id.clone()
-    }
 }

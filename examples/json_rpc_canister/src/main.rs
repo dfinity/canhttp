@@ -2,13 +2,11 @@
 
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
-    http::json::{Id, JsonRpcCall, JsonRpcHttpLayer, JsonRpcRequest},
+    http::json::{Id, JsonRpcHttpLayer, JsonRpcRequest},
     observability::ObservabilityLayer,
     Client,
 };
 use ic_cdk::update;
-use serde::de::DeserializeOwned;
-use serde::Serialize;
 use serde_json::json;
 use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
@@ -25,7 +23,12 @@ pub async fn make_json_rpc_request() -> u64 {
         .body(JsonRpcRequest::new("getSlot", json!([{"commitment": "finalized"}])).with_id(ID))
         .unwrap();
 
-    let response = client()
+    let mut client = ServiceBuilder::new()
+        .layer(observability_layer())
+        .layer(JsonRpcHttpLayer::new())
+        .cycles_accounting(ChargeMyself::default())
+        .service(Client::new_with_box_error());
+    let response = client
         .ready()
         .await
         .expect("Client should be ready")
@@ -54,7 +57,12 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         ])
         .unwrap();
 
-    let response = client()
+    let mut client = ServiceBuilder::new()
+        .layer(observability_layer())
+        .layer(JsonRpcHttpLayer::new())
+        .cycles_accounting(ChargeMyself::default())
+        .service(Client::new_with_box_error());
+    let response = client
         .ready()
         .await
         .expect("Client should be ready")
@@ -75,27 +83,24 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         .collect()
 }
 
-fn client<Request, Response>(
-) -> impl Service<http::Request<Request>, Response = http::Response<Response>, Error = BoxError>
+#[allow(clippy::type_complexity)]
+fn observability_layer<Request, Response>() -> ObservabilityLayer<
+    impl Fn(&Request) + Clone,
+    impl Fn((), &Response) + Clone,
+    impl Fn((), &BoxError) + Clone,
+>
 where
-    (Request, Response): JsonRpcCall<Request, Response>,
-    Request: Debug + Serialize,
-    Response: Debug + DeserializeOwned,
+    Request: Debug,
+    Response: Debug,
 {
-    ServiceBuilder::new()
-        .layer(
-            ObservabilityLayer::new()
-                .on_request(|request: &http::Request<Request>| ic_cdk::println!("{request:?}"))
-                .on_response(|_, response: &http::Response<Response>| {
-                    ic_cdk::println!("{response:?}");
-                })
-                .on_error(|_, error: &BoxError| {
-                    ic_cdk::println!("Error {error:?}");
-                }),
-        )
-        .layer(JsonRpcHttpLayer::new())
-        .cycles_accounting(ChargeMyself::default())
-        .service(Client::new_with_box_error())
+    ObservabilityLayer::new()
+        .on_request(|request: &Request| ic_cdk::println!("{request:?}"))
+        .on_response(|_, response: &Response| {
+            ic_cdk::println!("{response:?}");
+        })
+        .on_error(|_, error: &BoxError| {
+            ic_cdk::println!("Error {error:?}");
+        })
 }
 
 fn solana_test_validator_base_url() -> String {
