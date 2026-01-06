@@ -2,11 +2,15 @@
 
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
-    http::json::{Id, JsonRpcHttpLayer, JsonRpcRequest},
+    http::json::{
+        HttpBatchJsonRpcRequest, HttpBatchJsonRpcResponse, HttpJsonRpcRequest, HttpJsonRpcResponse,
+        Id, JsonRpcHttpLayer, JsonRpcRequest,
+    },
     observability::ObservabilityLayer,
     Client,
 };
 use ic_cdk::update;
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
 use std::fmt::Debug;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
@@ -23,12 +27,7 @@ pub async fn make_json_rpc_request() -> u64 {
         .body(JsonRpcRequest::new("getSlot", json!([{"commitment": "finalized"}])).with_id(ID))
         .unwrap();
 
-    let mut client = ServiceBuilder::new()
-        .layer(observability_layer())
-        .layer(JsonRpcHttpLayer::new())
-        .cycles_accounting(ChargeMyself::default())
-        .service(Client::new_with_box_error());
-    let response = client
+    let response = json_rpc_client()
         .ready()
         .await
         .expect("Client should be ready")
@@ -41,6 +40,23 @@ pub async fn make_json_rpc_request() -> u64 {
     assert_eq!(id, ID);
 
     result.expect("JSON-RPC API call should succeed")
+}
+
+fn json_rpc_client<Params, Result>(
+) -> impl Service<HttpJsonRpcRequest<Params>, Response = HttpJsonRpcResponse<Result>, Error = BoxError>
+where
+    Params: Debug + Serialize,
+    Result: Debug + DeserializeOwned,
+{
+    ServiceBuilder::new()
+        // Print request, response and errors to the console
+        .layer(observability_layer())
+        // Convert request and response to JSON-RPC over HTTP and validate response ID
+        .layer(JsonRpcHttpLayer::new())
+        // Use cycles from the canister to pay for HTTPs outcalls
+        .cycles_accounting(ChargeMyself::default())
+        // The actual client
+        .service(Client::new_with_box_error())
 }
 
 /// Make a batch JSON-RPC request to the Solana JSON-RPC API.
@@ -57,12 +73,7 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         ])
         .unwrap();
 
-    let mut client = ServiceBuilder::new()
-        .layer(observability_layer())
-        .layer(JsonRpcHttpLayer::new())
-        .cycles_accounting(ChargeMyself::default())
-        .service(Client::new_with_box_error());
-    let response = client
+    let response = batch_json_rpc_client()
         .ready()
         .await
         .expect("Client should be ready")
@@ -83,25 +94,43 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         .collect()
 }
 
-#[allow(clippy::type_complexity)]
-fn observability_layer<Request, Response>() -> ObservabilityLayer<
-    impl Fn(&Request) + Clone,
-    impl Fn((), &Response) + Clone,
-    impl Fn((), &BoxError) + Clone,
+fn batch_json_rpc_client<Params, Result>() -> impl Service<
+    HttpBatchJsonRpcRequest<Params>,
+    Response = HttpBatchJsonRpcResponse<Result>,
+    Error = BoxError,
 >
 where
-    Request: Debug,
-    Response: Debug,
+    Params: Debug + Serialize,
+    Result: Debug + DeserializeOwned,
 {
+    ServiceBuilder::new()
+        // Print request, response and errors to the console
+        .layer(observability_layer())
+        // Convert request and response batches to JSON-RPC over HTTP and validate response IDs
+        .layer(JsonRpcHttpLayer::new())
+        // Use cycles from the canister to pay for HTTPs outcalls
+        .cycles_accounting(ChargeMyself::default())
+        // The actual client
+        .service(Client::new_with_box_error())
+}
+
+fn observability_layer<Request: Debug, Response: Debug>(
+) -> ObservabilityLayer<RequestObserver<Request>, ResponseObserver<Response>, ErrorObserver> {
     ObservabilityLayer::new()
-        .on_request(|request: &Request| ic_cdk::println!("{request:?}"))
-        .on_response(|_, response: &Response| {
+        .on_request::<RequestObserver<Request>>(|request: &Request| {
+            ic_cdk::println!("{request:?}");
+        })
+        .on_response::<ResponseObserver<Response>>(|_, response: &Response| {
             ic_cdk::println!("{response:?}");
         })
-        .on_error(|_, error: &BoxError| {
+        .on_error::<ErrorObserver>(|_, error: &BoxError| {
             ic_cdk::println!("Error {error:?}");
         })
 }
+
+type RequestObserver<Request> = fn(&Request);
+type ResponseObserver<Response> = fn((), &Response);
+type ErrorObserver = fn((), &BoxError);
 
 fn solana_test_validator_base_url() -> String {
     option_env!("SOLANA_TEST_VALIDATOR_URL")

@@ -144,6 +144,58 @@ where
 /// carries a valid JSON-RPC ID matching the corresponding request ID. This guarantees that the
 /// [`Service`] complies with the [JSON-RPC 2.0 specification].
 ///
+/// # Examples
+///
+/// Create a simple JSON-RPC over HTTP client.
+/// ```
+/// use canhttp::{
+///     Client,
+///     http::json::{HttpJsonRpcRequest, HttpJsonRpcResponse, JsonRpcHttpLayer}
+/// };
+/// use serde::{de::DeserializeOwned, Serialize};
+/// use std::fmt::Debug;
+/// use tower::{BoxError, Service, ServiceBuilder};
+///
+/// fn client<Params, Result>() -> impl Service<
+///     HttpJsonRpcRequest<Params>,
+///     Response = HttpJsonRpcResponse<Result>,
+///     Error = BoxError
+/// >
+/// where
+///     Params: Debug + Serialize,
+///     Result: Debug + DeserializeOwned,
+/// {
+///     ServiceBuilder::new()
+///         .layer(JsonRpcHttpLayer::new())
+///         .service(Client::new_with_box_error())
+/// }
+/// ```
+///
+/// Create a simple batch JSON-RPC over HTTP client.
+/// ```
+/// use canhttp::{
+///     Client,
+///     http::json::{HttpBatchJsonRpcRequest, HttpBatchJsonRpcResponse, JsonRpcHttpLayer}
+/// };
+/// use serde::{de::DeserializeOwned, Serialize};
+/// use std::fmt::Debug;
+/// use tower::{BoxError, Service, ServiceBuilder};
+///
+/// fn client<Params, Result>() -> impl Service<
+///     HttpBatchJsonRpcRequest<Params>,
+///     Response = HttpBatchJsonRpcResponse<Result>,
+///     Error = BoxError
+/// >
+/// where
+///     Params: Debug + Serialize,
+///     Result: Debug + DeserializeOwned,
+/// {
+///     ServiceBuilder::new()
+///         .layer(JsonRpcHttpLayer::new())
+///         .service(Client::new_with_box_error())
+/// }
+/// ```
+///
 /// [`Service`]: tower::Service
 /// [JSON-RPC 2.0 specification]: https://www.jsonrpc.org/specification
 #[derive(Debug)]

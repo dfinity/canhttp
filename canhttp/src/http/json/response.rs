@@ -320,7 +320,7 @@ impl<I, O> CreateResponseFilter<HttpJsonRpcRequest<I>, HttpJsonRpcResponse<O>>
     for CreateJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>>
 where
     JsonRpcRequest<I>: Serialize,
-    JsonRpcRequest<I>: DeserializeOwned,
+    JsonRpcResponse<O>: DeserializeOwned,
 {
     type Filter = ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>, Id>;
     type Error = ConsistentResponseIdFilterError;
@@ -335,7 +335,7 @@ impl<I, O> CreateResponseFilter<HttpBatchJsonRpcRequest<I>, HttpBatchJsonRpcResp
     for CreateJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>>
 where
     BatchJsonRpcRequest<I>: Serialize,
-    BatchJsonRpcResponse<I>: DeserializeOwned,
+    BatchJsonRpcResponse<O>: DeserializeOwned,
 {
     type Filter =
         ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>, BTreeSet<Id>>;
@@ -380,7 +380,7 @@ impl<I, O> Filter<HttpJsonRpcResponse<O>>
     for ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>, Id>
 where
     JsonRpcRequest<I>: Serialize,
-    JsonRpcRequest<I>: DeserializeOwned,
+    JsonRpcResponse<O>: DeserializeOwned,
 {
     type Error = ConsistentResponseIdFilterError;
 
@@ -405,7 +405,7 @@ impl<I, O> Filter<HttpBatchJsonRpcResponse<O>>
     for ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>, BTreeSet<Id>>
 where
     BatchJsonRpcRequest<I>: Serialize,
-    BatchJsonRpcResponse<I>: DeserializeOwned,
+    BatchJsonRpcResponse<O>: DeserializeOwned,
 {
     type Error = ConsistentResponseIdFilterError;
 
