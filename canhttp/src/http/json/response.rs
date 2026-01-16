@@ -6,6 +6,8 @@ use crate::{
         HttpResponse,
     },
 };
+use itertools::Itertools;
+use maplit::btreeset;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::BTreeSet, fmt::Debug, marker::PhantomData};
@@ -322,12 +324,12 @@ where
     JsonRpcRequest<I>: Serialize,
     JsonRpcResponse<O>: DeserializeOwned,
 {
-    type Filter = ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>, Id>;
+    type Filter = ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>>;
     type Error = ConsistentResponseIdFilterError;
 
     fn create_filter(&self, request: &HttpJsonRpcRequest<I>) -> Self::Filter {
         let request_id = expected_response_id(request.body());
-        ConsistentJsonRpcIdFilter::new(request_id)
+        ConsistentJsonRpcIdFilter::new(btreeset! { request_id })
     }
 }
 
@@ -337,8 +339,7 @@ where
     BatchJsonRpcRequest<I>: Serialize,
     BatchJsonRpcResponse<O>: DeserializeOwned,
 {
-    type Filter =
-        ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>, BTreeSet<Id>>;
+    type Filter = ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>>;
     type Error = ConsistentResponseIdFilterError;
 
     fn create_filter(&self, request: &HttpBatchJsonRpcRequest<I>) -> Self::Filter {
@@ -359,14 +360,14 @@ where
 
 /// Ensure that the ID of the response is consistent with the one from the request
 /// that is stored internally.
-pub struct ConsistentJsonRpcIdFilter<Request, Response, Id> {
-    request_id: Id,
+pub struct ConsistentJsonRpcIdFilter<Request, Response> {
+    request_ids: BTreeSet<Id>,
     _marker: PhantomData<(Request, Response)>,
 }
 
-impl<Request, Response, Id> ConsistentJsonRpcIdFilter<Request, Response, Id> {
-    /// Creates a new JSON-RPC filter to ensure that the response ID(s) match(es) the given request
-    /// ID(s).
+impl<Request, Response> ConsistentJsonRpcIdFilter<Request, Response> {
+    /// Creates a new JSON-RPC filter to ensure that the response IDs match the given request
+    /// IDs.
     ///
     /// # Panics
     ///
@@ -374,16 +375,16 @@ impl<Request, Response, Id> ConsistentJsonRpcIdFilter<Request, Response, Id> {
     /// This is because a request ID with value [`Id::Null`] indicates a Notification,
     /// which indicates that the client does not care about the response (see the
     /// JSON-RPC [specification](https://www.jsonrpc.org/specification)).
-    fn new(request_id: Id) -> Self {
+    fn new(request_ids: BTreeSet<Id>) -> Self {
         Self {
-            request_id,
+            request_ids,
             _marker: PhantomData,
         }
     }
 }
 
 impl<I, O> Filter<HttpJsonRpcResponse<O>>
-    for ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>, Id>
+    for ConsistentJsonRpcIdFilter<JsonRpcRequest<I>, JsonRpcResponse<O>>
 where
     JsonRpcRequest<I>: Serialize,
     JsonRpcResponse<O>: DeserializeOwned,
@@ -394,13 +395,18 @@ where
         &mut self,
         response: HttpJsonRpcResponse<O>,
     ) -> Result<HttpJsonRpcResponse<O>, Self::Error> {
+        let request_id = self
+            .request_ids
+            .iter()
+            .exactly_one()
+            .expect("Expected request ID to contain only a single ID");
         let response_id = response.body().id();
-        if &self.request_id == response_id || should_have_null_id(response.body()) {
+        if request_id == response_id || should_have_null_id(response.body()) {
             Ok(response)
         } else {
             Err(ConsistentResponseIdFilterError::InconsistentId {
                 status: response.status().into(),
-                request_id: self.request_id.clone(),
+                request_id: request_id.clone(),
                 response_id: response_id.clone(),
             })
         }
@@ -408,7 +414,7 @@ where
 }
 
 impl<I, O> Filter<HttpBatchJsonRpcResponse<O>>
-    for ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>, BTreeSet<Id>>
+    for ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>>
 where
     BatchJsonRpcRequest<I>: Serialize,
     BatchJsonRpcResponse<O>: DeserializeOwned,
@@ -419,7 +425,7 @@ where
         &mut self,
         responses: HttpBatchJsonRpcResponse<O>,
     ) -> Result<HttpBatchJsonRpcResponse<O>, Self::Error> {
-        let request_ids = &self.request_id;
+        let request_ids = &self.request_ids;
 
         let expected_missing_id_count = responses
             .body()
