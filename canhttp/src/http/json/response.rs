@@ -264,7 +264,7 @@ impl JsonRpcError {
 pub enum ConsistentResponseIdFilterError {
     /// ID of the response does not match that of the request.
     #[error(
-        "Unexpected identifier: expected response ID to be {request_id:?}, but got {response_id:?}"
+        "Unexpected identifier: expected response ID to be {request_id}, but got {response_id}"
     )]
     InconsistentId {
         /// Response status code.
