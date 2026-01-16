@@ -341,13 +341,19 @@ where
         ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>, BTreeSet<Id>>;
     type Error = ConsistentResponseIdFilterError;
 
-    fn create_filter(&self, requests: &HttpBatchJsonRpcRequest<I>) -> Self::Filter {
-        let request_id = requests
-            .body()
-            .iter()
-            .map(expected_response_id)
-            .collect::<BTreeSet<_>>();
-        ConsistentJsonRpcIdFilter::new(request_id)
+    fn create_filter(&self, request: &HttpBatchJsonRpcRequest<I>) -> Self::Filter {
+        let requests = request.body();
+        let request_ids: BTreeSet<_> = requests.iter().map(expected_response_id).collect();
+
+        // We panic here because the request IDs not being unique is a problem with the client
+        // constructing the requests.
+        assert_eq!(
+            request_ids.len(),
+            requests.len(),
+            "Expected request IDs to be unique, but got: {request_ids:?}"
+        );
+
+        ConsistentJsonRpcIdFilter::new(request_ids)
     }
 }
 
