@@ -1,10 +1,11 @@
 //! Example of a canister using `canhttp` to issue JSON-RPC HTTP requests.
 
+use candid::{CandidType, Deserialize};
 use canhttp::{
     cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
     http::json::{
         HttpBatchJsonRpcRequest, HttpBatchJsonRpcResponse, HttpJsonRpcRequest, HttpJsonRpcResponse,
-        Id, JsonRpcHttpLayer, JsonRpcRequest,
+        Id, JsonRpcHttpLayer, JsonRpcRequest, JsonRpcResponse,
     },
     observability::ObservabilityLayer,
     Client,
@@ -61,15 +62,15 @@ where
 
 /// Make a batch JSON-RPC request to the Solana JSON-RPC API.
 #[update]
-pub async fn make_batch_json_rpc_request() -> Vec<u64> {
-    // Send [`getSlot`](https://solana.com/docs/rpc/http/getslot) JSON-RPC requests that fetch
-    // the current height of the Solana blockchain with different commitment requirements.
+pub async fn make_batch_json_rpc_request() -> SlotInfo {
+    // Send a `getSlot` JSON-RPC request that fetches the current height of the Solana blockchain
+    // together with a `getSlotLeader` that fetches the identity of the leader for that slot.
     let requests = http::Request::post(solana_test_validator_base_url())
         .header("Content-Type", "application/json")
         .body(vec![
             JsonRpcRequest::new("getSlot", json!([{"commitment": "finalized"}])).with_id(0_u64),
-            JsonRpcRequest::new("getSlot", json!([{"commitment": "confirmed"}])).with_id(1_u64),
-            JsonRpcRequest::new("getSlot", json!([{"commitment": "processed"}])).with_id(2_u64),
+            JsonRpcRequest::new("getSlotLeader", json!([{"commitment": "finalized"}]))
+                .with_id(1_u64),
         ])
         .unwrap();
 
@@ -82,16 +83,30 @@ pub async fn make_batch_json_rpc_request() -> Vec<u64> {
         .expect("Request should succeed");
     assert_eq!(response.status(), http::StatusCode::OK);
 
-    response
-        .into_body()
-        .into_iter()
-        .zip(0_u64..)
-        .map(|(response, expected_id)| {
-            let (id, result) = response.into_parts();
-            assert_eq!(id, expected_id.into());
-            result.expect("JSON-RPC API call should succeed")
-        })
-        .collect()
+    let [get_slot_response, get_slot_leader_response]: [JsonRpcResponse<serde_json::Value>; 2] =
+        response
+            .into_body()
+            .try_into()
+            .expect("Expected exactly 2 JSON-RPC responses");
+
+    assert_eq!(get_slot_response.id(), &Id::Number(0));
+    let slot = get_slot_response
+        .into_result()
+        .expect("`getSlot` call should succeed")
+        .as_u64()
+        .expect("Invalid `getSlot` response");
+    println!("Slot: {:?}", slot);
+
+    assert_eq!(get_slot_leader_response.id(), &Id::Number(1));
+    let leader = get_slot_leader_response
+        .into_result()
+        .expect("`getSlotLeader` call should succeed")
+        .as_str()
+        .expect("Invalid `getSlotLeader` response")
+        .to_string();
+    println!("Slot leader: {:?}", leader);
+
+    SlotInfo { slot, leader }
 }
 
 fn batch_json_rpc_client<Params, Result>() -> impl Service<
@@ -139,3 +154,9 @@ fn solana_test_validator_base_url() -> String {
 }
 
 fn main() {}
+
+#[derive(CandidType, Deserialize)]
+pub struct SlotInfo {
+    slot: u64,
+    leader: String,
+}

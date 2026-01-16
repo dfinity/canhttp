@@ -1,3 +1,4 @@
+use candid::{CandidType, Deserialize};
 use test_fixtures::Setup;
 
 #[tokio::test]
@@ -18,10 +19,15 @@ async fn should_make_batch_json_rpc_request() {
 
     let result = setup
         .canister()
-        .update_call::<_, Vec<u64>>("make_batch_json_rpc_request", ())
+        .update_call::<_, SlotInfo>("make_batch_json_rpc_request", ())
         .await;
 
-    for value in result {
-        assert!(value > 0);
-    }
+    assert!(result.slot > 0);
+    assert_eq!(result.leader.len(), 44);
+}
+
+#[derive(CandidType, Deserialize)]
+struct SlotInfo {
+    slot: u64,
+    leader: String,
 }
