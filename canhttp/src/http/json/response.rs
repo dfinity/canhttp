@@ -1,17 +1,21 @@
-use crate::http::json::BatchJsonRpcRequest;
 use crate::{
     convert::{Convert, CreateResponseFilter, Filter},
     http::{
-        json::{HttpBatchJsonRpcRequest, HttpJsonRpcRequest, Id, JsonRpcRequest, Version},
+        json::{
+            BatchJsonRpcRequest, HttpBatchJsonRpcRequest, HttpJsonRpcRequest, Id, JsonRpcRequest,
+            Version,
+        },
         HttpResponse,
     },
 };
 use itertools::Itertools;
-use maplit::btreeset;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::BTreeSet, fmt::Debug, marker::PhantomData};
+use std::{collections::BTreeMap, fmt::Debug, marker::PhantomData};
 use thiserror::Error;
+
+#[cfg(test)]
+mod tests;
 
 /// Convert responses of type [HttpResponse] into [`http::Response<T>`], where `T` is `Deserialize`
 /// by parsing the response body as JSON text bytes.
@@ -259,6 +263,18 @@ impl JsonRpcError {
     pub fn is_invalid_request(&self) -> bool {
         self.code == -32600
     }
+
+    /// An invalid request JSON-RPC error object,
+    /// as defined in the [JSON-RPC specification](https://www.jsonrpc.org/specification).
+    pub fn invalid_request() -> Self {
+        Self::new(-32600, "Invalid Request")
+    }
+
+    /// A parse error JSON-RPC error object,
+    /// as defined in the [JSON-RPC specification](https://www.jsonrpc.org/specification).
+    pub fn parse_error() -> Self {
+        Self::new(-32700, "Parse error")
+    }
 }
 
 /// Error returned by the [`ConsistentJsonRpcIdFilter`].
@@ -284,9 +300,9 @@ pub enum ConsistentResponseIdFilterError {
         /// Response status code.
         status: u16,
         /// IDs from the request.
-        request_ids: BTreeSet<Id>,
+        request_ids: Vec<Id>,
         /// IDs from the response.
-        response_ids: BTreeSet<Id>,
+        response_ids: Vec<Id>,
     },
 }
 
@@ -329,7 +345,7 @@ where
 
     fn create_filter(&self, request: &HttpJsonRpcRequest<I>) -> Self::Filter {
         let request_id = expected_response_id(request.body());
-        ConsistentJsonRpcIdFilter::new(btreeset! { request_id })
+        ConsistentJsonRpcIdFilter::new(vec![request_id])
     }
 }
 
@@ -344,12 +360,15 @@ where
 
     fn create_filter(&self, request: &HttpBatchJsonRpcRequest<I>) -> Self::Filter {
         let requests = request.body();
-        let request_ids: BTreeSet<_> = requests.iter().map(expected_response_id).collect();
+        let request_ids = requests
+            .iter()
+            .map(expected_response_id)
+            .collect::<Vec<_>>();
 
         // We panic here because the request IDs not being unique is a problem with the client
         // constructing the requests.
         assert_eq!(
-            request_ids.len(),
+            request_ids.iter().dedup().count(),
             requests.len(),
             "Expected request IDs to be unique, but got: {request_ids:?}"
         );
@@ -361,7 +380,7 @@ where
 /// Ensure that the ID of the response is consistent with the one from the request
 /// that is stored internally.
 pub struct ConsistentJsonRpcIdFilter<Request, Response> {
-    request_ids: BTreeSet<Id>,
+    request_ids: Vec<Id>,
     _marker: PhantomData<(Request, Response)>,
 }
 
@@ -375,7 +394,7 @@ impl<Request, Response> ConsistentJsonRpcIdFilter<Request, Response> {
     /// This is because a request ID with value [`Id::Null`] indicates a Notification,
     /// which indicates that the client does not care about the response (see the
     /// JSON-RPC [specification](https://www.jsonrpc.org/specification)).
-    fn new(request_ids: BTreeSet<Id>) -> Self {
+    fn new(request_ids: Vec<Id>) -> Self {
         Self {
             request_ids,
             _marker: PhantomData,
@@ -395,6 +414,15 @@ where
         &mut self,
         response: HttpJsonRpcResponse<O>,
     ) -> Result<HttpJsonRpcResponse<O>, Self::Error> {
+        // From the [JSON-RPC specification](https://www.jsonrpc.org/specification):
+        // > If there was an error in detecting the id in the Request object
+        // > (e.g. Parse error/Invalid Request), it MUST be Null.
+        fn should_have_null_id<T>(response: &JsonRpcResponse<T>) -> bool {
+            let (response_id, result) = response.as_parts();
+            response_id.is_null()
+                && result.is_err_and(|e| e.is_parse_error() || e.is_invalid_request())
+        }
+
         let request_id = self
             .request_ids
             .iter()
@@ -423,50 +451,24 @@ where
 
     fn filter(
         &mut self,
-        responses: HttpBatchJsonRpcResponse<O>,
+        response: HttpBatchJsonRpcResponse<O>,
     ) -> Result<HttpBatchJsonRpcResponse<O>, Self::Error> {
-        let request_ids = &self.request_ids;
-
-        let expected_missing_id_count = responses
-            .body()
-            .iter()
-            .filter(|response| should_have_null_id(response))
-            .count();
-
-        let response_ids = responses
-            .body()
+        let (head, responses) = response.into_parts();
+        let response_ids: Vec<Id> = responses
             .iter()
             .map(|response| response.id())
-            .collect::<BTreeSet<_>>();
-
-        let missing_id_count = request_ids
-            .iter()
-            .filter(|id| !response_ids.contains(id))
-            .count();
-
-        let unexpected_id_count = response_ids
-            .iter()
-            .filter(|id| !request_ids.contains(id))
-            .count();
-
-        if (unexpected_id_count == 0) && (missing_id_count <= expected_missing_id_count) {
-            Ok(responses)
-        } else {
-            Err(ConsistentResponseIdFilterError::InconsistentBatchIds {
-                status: responses.status().into(),
-                request_ids: request_ids.clone(),
-                response_ids: response_ids.into_iter().cloned().collect(),
-            })
-        }
+            .cloned()
+            .collect();
+        let correlated_responses =
+            correlate_response_ids(&self.request_ids, responses).map_err(|_| {
+                ConsistentResponseIdFilterError::InconsistentBatchIds {
+                    status: head.status.into(),
+                    request_ids: self.request_ids.to_vec(),
+                    response_ids,
+                }
+            })?;
+        Ok(http::Response::from_parts(head, correlated_responses))
     }
-}
-
-// From the [JSON-RPC specification](https://www.jsonrpc.org/specification):
-// If there was an error in detecting the id in the Request object
-// (e.g. Parse error/Invalid Request), it MUST be Null.
-fn should_have_null_id<T>(response: &JsonRpcResponse<T>) -> bool {
-    let (response_id, result) = response.as_parts();
-    response_id.is_null() && result.is_err_and(|e| e.is_parse_error() || e.is_invalid_request())
 }
 
 fn expected_response_id<T>(request: &JsonRpcRequest<T>) -> Id {
@@ -474,4 +476,64 @@ fn expected_response_id<T>(request: &JsonRpcRequest<T>) -> Id {
         Id::Null => panic!("ERROR: a null request ID is a notification that indicates that the client is not interested in the response."),
         id @ (Id::Number(_) | Id::String(_)) => id.clone()
     }
+}
+
+fn correlate_response_ids<T>(
+    request_ids: &[Id],
+    responses: Vec<JsonRpcResponse<T>>,
+) -> Result<Vec<JsonRpcResponse<T>>, ()> {
+    if request_ids.len() != responses.len() {
+        return Err(());
+    }
+
+    // From the [JSON-RPC specification](https://www.jsonrpc.org/specification):
+    // > If there was an error in detecting the id in the Request object
+    // > (e.g. Parse error/Invalid Request), it MUST be Null.
+    // However, a parse error should result in a single error object for the response:
+    // > If the batch rpc call itself fails to be recognized as an valid JSON or as an Array
+    // > with at least one value, the response from the Server MUST be a single Response object.
+    // Hence, a null ID must only occur in the event of an invalid request error.
+    if responses
+        .iter()
+        .filter(|response| response.id().is_null())
+        .any(|response| !response.as_result().is_err_and(|e| e.is_invalid_request()))
+    {
+        return Err(());
+    }
+    let num_responses_with_null_id = responses
+        .iter()
+        .filter(|response| response.id().is_null())
+        .count();
+
+    // Correlate responses to requests by ID
+    let mut responses_with_non_null_id = BTreeMap::from_iter(
+        responses
+            .into_iter()
+            .map(|response| (response.id().clone(), response))
+            .filter(|(id, _)| !id.is_null()),
+    );
+    let mut num_missing_request_ids = 0;
+    let correlated_responses = request_ids
+        .iter()
+        .map(
+            |request_id| match responses_with_non_null_id.remove(request_id) {
+                Some(response) => response,
+                None => {
+                    num_missing_request_ids += 1;
+                    JsonRpcResponse::from_parts(
+                        request_id.clone(),
+                        Err(JsonRpcError::invalid_request()),
+                    )
+                }
+            },
+        )
+        .collect::<Vec<_>>();
+
+    // Make sure there are no missing or unexpected request IDs, i.e., the only missing request IDs
+    // are those for which the response is an invalid request error.
+    if num_responses_with_null_id != num_missing_request_ids {
+        return Err(());
+    }
+
+    Ok(correlated_responses)
 }

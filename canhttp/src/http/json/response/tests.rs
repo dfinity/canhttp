@@ -1,0 +1,191 @@
+use super::{correlate_response_ids, Id, JsonRpcError, JsonRpcResponse};
+use crate::http::json::response::JsonRpcResult;
+use proptest::{
+    arbitrary::any,
+    collection::{btree_set, vec},
+    prelude::{Just, Strategy},
+    prop_oneof, proptest,
+};
+use serde_json::json;
+use std::{iter, ops::Range};
+
+mod json_rpc_batch_response_id_validation_tests {
+    use super::*;
+
+    #[test]
+    fn should_succeed_for_empty_response() {
+        let result = correlate_response_ids::<serde_json::Value>(&[], Vec::new());
+
+        assert!(result.is_ok());
+    }
+
+    proptest! {
+        #[test]
+        fn should_succeed_with_responses_in_any_order(
+            responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+        ) {
+            let request_ids = response_ids(&responses).into_iter().rev().collect::<Vec<_>>();
+
+            let result = correlate_response_ids(&request_ids, responses);
+
+            assert!(result.is_ok());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn should_succeed_with_invalid_request_errors_in_any_order(
+            responses in arbitrary_responses_with_null_ids(2..10),
+        ) {
+            let request_ids = response_ids(&responses).into_iter().rev().collect::<Vec<_>>();
+
+            let result = correlate_response_ids(&request_ids, responses);
+
+            assert!(result.is_ok());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn should_return_error_for_unexpected_id_in_response(
+            mut responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+        ) {
+            let mut request_ids = response_ids(&responses);
+
+            // Ensure one of the response IDs is not in the request IDs
+            request_ids.remove(0);
+            responses.remove(responses.len() - 1);
+
+            let result = correlate_response_ids(&request_ids, responses);
+
+            assert!(result.is_err());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn should_return_error_for_duplicate_id_in_response(
+            mut responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+        ) {
+            let n = responses.len();
+            let request_ids = response_ids(&responses);
+
+            // Duplicate the second last response ID
+            let id = responses[n - 2].id().clone();
+            set_id(&mut responses[n - 1], id);
+
+            let result = correlate_response_ids(&request_ids, responses);
+
+            assert!(result.is_err());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn should_return_error_for_too_many_responses(
+            mut responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+        ) {
+            let request_ids = response_ids(&responses);
+
+            // Ensure there is one more response than expected request IDs
+            responses.remove(responses.len() - 1);
+
+            let result = correlate_response_ids(&request_ids, responses);
+
+            assert!(result.is_err());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn should_return_error_for_too_few_responses(
+            responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+        ) {
+            let mut request_ids = response_ids(&responses);
+
+            // Ensure there is one more request ID than responses
+            request_ids.remove(request_ids.len() - 1);
+
+            let result = correlate_response_ids(&request_ids, responses);
+
+            assert!(result.is_err());
+        }
+    }
+
+    proptest! {
+        #[test]
+        fn should_return_error_for_response_with_null_id_that_is_not_invalid_request_error(
+            mut responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+        ) {
+            let n = responses.len();
+            let request_ids = response_ids(&responses);
+
+            // Ensure there is one more request ID than responses
+            set_id(&mut responses[n - 1], Id::Null);
+
+            let result = correlate_response_ids(&request_ids, responses);
+
+            assert!(result.is_err());
+        }
+    }
+
+    fn response_ids<T>(responses: &[JsonRpcResponse<T>]) -> Vec<Id> {
+        responses
+            .iter()
+            .map(|response| response.id())
+            .cloned()
+            .collect()
+    }
+
+    fn arbitrary_responses_with_null_ids(
+        size: Range<usize>,
+    ) -> impl Strategy<Value = Vec<JsonRpcResponse<serde_json::Value>>> {
+        (
+            vec(Just(Id::Null), size.clone()),
+            vec(Just(Err(JsonRpcError::invalid_request())), size.clone()),
+            btree_set(arbitrary_nonnull_id(), size.clone()).prop_map(Vec::from_iter),
+            vec(arbitrary_json_rpc_result(), size),
+        )
+            .prop_map(|(null_ids, invalid_request_errors, unique_ids, results)| {
+                iter::zip(null_ids, invalid_request_errors)
+                    .chain(iter::zip(unique_ids, results))
+                    .map(|(id, result)| JsonRpcResponse::from_parts(id, result))
+                    .collect()
+            })
+            .prop_shuffle()
+    }
+
+    fn arbitrary_responses_with_unique_nonnull_ids(
+        size: Range<usize>,
+    ) -> impl Strategy<Value = Vec<JsonRpcResponse<serde_json::Value>>> {
+        (
+            // Ensure the response IDs are unique
+            btree_set(arbitrary_nonnull_id(), size.clone()).prop_map(Vec::from_iter),
+            vec(arbitrary_json_rpc_result(), size),
+        )
+            .prop_map(|(ids, results)| {
+                iter::zip(ids, results)
+                    .map(|(id, result)| JsonRpcResponse::from_parts(id, result))
+                    .collect()
+            })
+    }
+
+    fn arbitrary_json_rpc_result() -> impl Strategy<Value = JsonRpcResult<serde_json::Value>> {
+        prop_oneof![
+            (".*", any::<u64>())
+                .prop_map(|(key, value)| json!({key: value}))
+                .prop_map(Ok),
+            (any::<i32>(), ".*")
+                .prop_map(|(code, message)| JsonRpcError::new(code, message))
+                .prop_map(Err),
+        ]
+    }
+
+    fn arbitrary_nonnull_id() -> impl Strategy<Value = Id> {
+        prop_oneof![any::<u64>().prop_map(Id::Number), ".*".prop_map(Id::String),]
+    }
+
+    fn set_id<T: Clone>(response: &mut JsonRpcResponse<T>, id: Id) {
+        *response = JsonRpcResponse::from_parts(id, response.clone().into_result());
+    }
+}
