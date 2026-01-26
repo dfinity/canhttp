@@ -497,17 +497,14 @@ fn try_order_responses_by_id<T>(
     // > If the batch rpc call itself fails to be recognized as an valid JSON or as an Array
     // > with at least one value, the response from the Server MUST be a single Response object.
     // Hence, a null ID must only occur in the event of an invalid request error.
-    if responses
-        .iter()
-        .filter(|response| response.id().is_null())
-        .any(|response| !response.as_result().is_err_and(|e| e.is_invalid_request()))
+    let responses_with_null_id = responses.iter().filter(|response| response.id().is_null());
+    if !responses_with_null_id
+        .clone()
+        .all(|response| response.as_result().is_err_and(|e| e.is_invalid_request()))
     {
         return None;
     }
-    let num_responses_with_null_id = responses
-        .iter()
-        .filter(|response| response.id().is_null())
-        .count();
+    let num_responses_with_null_id = responses_with_null_id.count();
 
     // Correlate responses to requests by ID
     let mut responses_with_non_null_id = BTreeMap::from_iter(
