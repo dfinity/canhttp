@@ -6,7 +6,8 @@
 #![forbid(missing_docs)]
 
 pub use client::{
-    Client, HttpsOutcallError, IcError, MaxResponseBytesRequestExtension,
+    Client, HttpsOutcallError, IcError, IsReplicatedRequestExtension,
+    MaxResponseBytesRequestExtension,
     TransformContextRequestExtension,
 };
 pub use convert::ConvertServiceBuilder;

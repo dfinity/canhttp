@@ -4,7 +4,8 @@ use crate::{
         response::{HttpResponse, HttpResponseConversionError},
         HttpConversionLayer, HttpRequestConverter, HttpResponseConverter,
     },
-    ConvertServiceBuilder, IcError, MaxResponseBytesRequestExtension,
+    ConvertServiceBuilder, IcError, IsReplicatedRequestExtension,
+    MaxResponseBytesRequestExtension,
     TransformContextRequestExtension,
 };
 use assert_matches::assert_matches;
@@ -27,6 +28,7 @@ async fn should_convert_http_request() {
         function: TransformFunc::new(Principal::management_canister(), "sanitize".to_string()),
         context: vec![35_u8; 20],
     };
+    let is_replicated = true;
     let body = vec![42_u8; 32];
 
     let mut service = ServiceBuilder::new()
@@ -41,6 +43,7 @@ async fn should_convert_http_request() {
         let request = request_builder
             .max_response_bytes(max_response_bytes)
             .transform_context(transform_context.clone())
+            .is_replicated(is_replicated)
             .header("Content-Type", "application/json")
             .body(body.clone())
             .unwrap();
@@ -59,9 +62,28 @@ async fn should_convert_http_request() {
                 }],
                 body: Some(body.clone()),
                 transform: Some(transform_context.clone()),
-                is_replicated: None,
+                is_replicated: Some(is_replicated),
             }
         )
+    }
+}
+
+#[tokio::test]
+async fn should_convert_is_replicated_flag() {
+    let url = "https://internetcomputer.org/";
+    let mut service = ServiceBuilder::new()
+        .convert_request(HttpRequestConverter)
+        .service_fn(echo_request);
+
+    for is_replicated in [true, false] {
+        let request = http::Request::get(url)
+            .is_replicated(is_replicated)
+            .body(vec![])
+            .unwrap();
+
+        let converted_request = service.ready().await.unwrap().call(request).await.unwrap();
+
+        assert_eq!(converted_request.is_replicated, Some(is_replicated));
     }
 }
 
@@ -186,10 +208,12 @@ async fn should_convert_both_request_and_responses() {
         function: TransformFunc::new(Principal::management_canister(), "sanitize".to_string()),
         context: vec![35_u8; 20],
     };
+    let is_replicated = false;
     let body = vec![42_u8; 32];
     let request = http::Request::post(url)
         .max_response_bytes(max_response_bytes)
         .transform_context(transform_context.clone())
+        .is_replicated(is_replicated)
         .header("Content-Type", "application/json")
         .body(body.clone())
         .unwrap();
@@ -209,7 +233,7 @@ async fn should_convert_both_request_and_responses() {
             }],
             body: Some(body.clone()),
             transform: Some(transform_context.clone()),
-            is_replicated: None,
+            is_replicated: Some(is_replicated),
         }
     );
 
