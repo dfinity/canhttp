@@ -8,7 +8,7 @@ use crate::{
         HttpResponse,
     },
 };
-use itertools::Itertools;
+use itertools::{Either, Itertools};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
 use std::collections::BTreeSet;
@@ -490,6 +490,14 @@ fn try_order_responses_by_id<T>(
         return None;
     }
 
+    let (responses_with_null_id, mut responses_with_non_null_id): (Vec<_>, BTreeMap<_, _>) =
+        responses
+            .into_iter()
+            .partition_map(|response| match response.id() {
+                Id::Null => Either::Left(response),
+                _ => Either::Right((response.id().clone(), response)),
+            });
+
     // From the [JSON-RPC specification](https://www.jsonrpc.org/specification):
     // > If there was an error in detecting the id in the Request object
     // > (e.g. Parse error/Invalid Request), it MUST be Null.
@@ -497,22 +505,15 @@ fn try_order_responses_by_id<T>(
     // > If the batch rpc call itself fails to be recognized as an valid JSON or as an Array
     // > with at least one value, the response from the Server MUST be a single Response object.
     // Hence, a null ID must only occur in the event of an invalid request error.
-    let responses_with_null_id = responses.iter().filter(|response| response.id().is_null());
     if !responses_with_null_id
-        .clone()
+        .iter()
         .all(|response| response.as_result().is_err_and(|e| e.is_invalid_request()))
     {
         return None;
     }
-    let num_responses_with_null_id = responses_with_null_id.count();
+    let num_responses_with_null_id = responses_with_null_id.len();
 
     // Correlate responses to requests by ID
-    let mut responses_with_non_null_id = BTreeMap::from_iter(
-        responses
-            .into_iter()
-            .map(|response| (response.id().clone(), response))
-            .filter(|(id, _)| !id.is_null()),
-    );
     let mut num_missing_request_ids = 0;
     let correlated_responses = request_ids
         .iter()
