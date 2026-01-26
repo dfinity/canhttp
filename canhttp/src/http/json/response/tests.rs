@@ -16,7 +16,7 @@ mod json_rpc_batch_response_id_validation_tests {
     fn should_succeed_for_empty_response() {
         let result = try_order_responses_by_id::<serde_json::Value>(&[], Vec::new());
 
-        assert!(result.is_ok());
+        assert!(result.is_some());
     }
 
     proptest! {
@@ -28,7 +28,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_ok());
+            assert!(result.is_some());
         }
     }
 
@@ -41,7 +41,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_ok());
+            assert!(result.is_some());
         }
     }
 
@@ -58,7 +58,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_err());
+            assert!(result.is_none());
         }
     }
 
@@ -76,7 +76,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_err());
+            assert!(result.is_none());
         }
     }
 
@@ -92,7 +92,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_err());
+            assert!(result.is_none());
         }
     }
 
@@ -108,7 +108,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_err());
+            assert!(result.is_none());
         }
     }
 
@@ -125,7 +125,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_err());
+            assert!(result.is_none());
         }
     }
 
