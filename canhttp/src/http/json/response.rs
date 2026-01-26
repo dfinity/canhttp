@@ -368,7 +368,7 @@ where
         // We panic here because the request IDs not being unique is a problem with the client
         // constructing the requests.
         assert_eq!(
-            request_ids.iter().dedup().count(),
+            BTreeSet::from_iter(request_ids.iter()).len(),
             requests.len(),
             "Expected request IDs to be unique, but got: {request_ids:?}"
         );
