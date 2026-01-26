@@ -1,4 +1,4 @@
-use super::{correlate_response_ids, Id, JsonRpcError, JsonRpcResponse};
+use super::{try_order_responses_by_id, Id, JsonRpcError, JsonRpcResponse};
 use crate::http::json::response::JsonRpcResult;
 use proptest::{
     arbitrary::any,
@@ -14,7 +14,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
     #[test]
     fn should_succeed_for_empty_response() {
-        let result = correlate_response_ids::<serde_json::Value>(&[], Vec::new());
+        let result = try_order_responses_by_id::<serde_json::Value>(&[], Vec::new());
 
         assert!(result.is_ok());
     }
@@ -26,7 +26,7 @@ mod json_rpc_batch_response_id_validation_tests {
         ) {
             let request_ids = response_ids(&responses).into_iter().rev().collect::<Vec<_>>();
 
-            let result = correlate_response_ids(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, responses);
 
             assert!(result.is_ok());
         }
@@ -39,7 +39,7 @@ mod json_rpc_batch_response_id_validation_tests {
         ) {
             let request_ids = response_ids(&responses).into_iter().rev().collect::<Vec<_>>();
 
-            let result = correlate_response_ids(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, responses);
 
             assert!(result.is_ok());
         }
@@ -56,7 +56,7 @@ mod json_rpc_batch_response_id_validation_tests {
             request_ids.remove(0);
             responses.remove(responses.len() - 1);
 
-            let result = correlate_response_ids(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, responses);
 
             assert!(result.is_err());
         }
@@ -74,7 +74,7 @@ mod json_rpc_batch_response_id_validation_tests {
             let id = responses[n - 2].id().clone();
             set_id(&mut responses[n - 1], id);
 
-            let result = correlate_response_ids(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, responses);
 
             assert!(result.is_err());
         }
@@ -90,7 +90,7 @@ mod json_rpc_batch_response_id_validation_tests {
             // Ensure there is one more response than expected request IDs
             responses.remove(responses.len() - 1);
 
-            let result = correlate_response_ids(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, responses);
 
             assert!(result.is_err());
         }
@@ -106,7 +106,7 @@ mod json_rpc_batch_response_id_validation_tests {
             // Ensure there is one more request ID than responses
             request_ids.remove(request_ids.len() - 1);
 
-            let result = correlate_response_ids(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, responses);
 
             assert!(result.is_err());
         }
@@ -123,7 +123,7 @@ mod json_rpc_batch_response_id_validation_tests {
             // Ensure there is one more request ID than responses
             set_id(&mut responses[n - 1], Id::Null);
 
-            let result = correlate_response_ids(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, responses);
 
             assert!(result.is_err());
         }

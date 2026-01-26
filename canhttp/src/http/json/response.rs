@@ -465,13 +465,11 @@ where
             .map(|response| response.id())
             .cloned()
             .collect();
-        let correlated_responses =
-            correlate_response_ids(&self.request_ids, responses).map_err(|_| {
-                ConsistentResponseIdFilterError::InconsistentBatchIds {
-                    status: head.status.into(),
-                    request_ids: self.request_ids.to_vec(),
-                    response_ids,
-                }
+        let correlated_responses = try_order_responses_by_id(&self.request_ids, responses)
+            .ok_or_else(|| ConsistentResponseIdFilterError::InconsistentBatchIds {
+                status: head.status.into(),
+                request_ids: self.request_ids.to_vec(),
+                response_ids,
             })?;
         Ok(http::Response::from_parts(head, correlated_responses))
     }
@@ -484,12 +482,12 @@ fn expected_response_id<T>(request: &JsonRpcRequest<T>) -> Id {
     }
 }
 
-fn correlate_response_ids<T>(
+fn try_order_responses_by_id<T>(
     request_ids: &[Id],
     responses: Vec<JsonRpcResponse<T>>,
-) -> Result<Vec<JsonRpcResponse<T>>, ()> {
+) -> Option<Vec<JsonRpcResponse<T>>> {
     if request_ids.len() != responses.len() {
-        return Err(());
+        return None;
     }
 
     // From the [JSON-RPC specification](https://www.jsonrpc.org/specification):
@@ -504,7 +502,7 @@ fn correlate_response_ids<T>(
         .filter(|response| response.id().is_null())
         .any(|response| !response.as_result().is_err_and(|e| e.is_invalid_request()))
     {
-        return Err(());
+        return None;
     }
     let num_responses_with_null_id = responses
         .iter()
@@ -538,8 +536,8 @@ fn correlate_response_ids<T>(
     // Make sure there are no missing or unexpected request IDs, i.e., the only missing request IDs
     // are those for which the response is an invalid request error.
     if num_responses_with_null_id != num_missing_request_ids {
-        return Err(());
+        return None;
     }
 
-    Ok(correlated_responses)
+    Some(correlated_responses)
 }
