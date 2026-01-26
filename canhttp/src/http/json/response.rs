@@ -11,6 +11,7 @@ use crate::{
 use itertools::Itertools;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use serde_json::Value;
+use std::collections::BTreeSet;
 use std::{collections::BTreeMap, fmt::Debug, marker::PhantomData};
 use thiserror::Error;
 
@@ -358,15 +359,20 @@ where
     type Filter = ConsistentJsonRpcIdFilter<BatchJsonRpcRequest<I>, BatchJsonRpcResponse<O>>;
     type Error = ConsistentResponseIdFilterError;
 
+    /// # Panics
+    ///
+    /// This implementation panics in the following cases:
+    /// * The JSON-RPC batch is empty.
+    /// * The IDs of the requests in the JSON-RPC batch are not unique.
     fn create_filter(&self, request: &HttpBatchJsonRpcRequest<I>) -> Self::Filter {
         let requests = request.body();
+
+        assert!(!requests.is_empty(), "Expected batch to not be empty");
+
         let request_ids = requests
             .iter()
             .map(expected_response_id)
             .collect::<Vec<_>>();
-
-        // We panic here because the request IDs not being unique is a problem with the client
-        // constructing the requests.
         assert_eq!(
             BTreeSet::from_iter(request_ids.iter()).len(),
             requests.len(),
