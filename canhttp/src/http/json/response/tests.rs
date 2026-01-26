@@ -4,7 +4,7 @@ use proptest::{
     arbitrary::any,
     collection::{btree_set, vec},
     prelude::{Just, Strategy},
-    prop_oneof, proptest,
+    prop_assert, prop_assert_eq, prop_oneof, proptest,
 };
 use serde_json::json;
 use std::{iter, ops::Range};
@@ -17,6 +17,7 @@ mod json_rpc_batch_response_id_validation_tests {
         let result = try_order_responses_by_id::<serde_json::Value>(&[], Vec::new());
 
         assert!(result.is_some());
+        assert_eq!(result.unwrap(), Vec::new());
     }
 
     proptest! {
@@ -28,7 +29,8 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_some());
+            prop_assert!(result.is_some());
+            prop_assert_eq!(request_ids, response_ids(&result.unwrap()));
         }
     }
 
@@ -41,7 +43,8 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_some());
+            prop_assert!(result.is_some());
+            prop_assert_eq!(request_ids, response_ids(&result.unwrap()));
         }
     }
 
