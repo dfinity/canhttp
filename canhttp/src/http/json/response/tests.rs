@@ -69,7 +69,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_none());
+            prop_assert!(result.is_none());
         }
     }
 
@@ -87,7 +87,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_none());
+            prop_assert!(result.is_none());
         }
     }
 
@@ -103,7 +103,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_none());
+            prop_assert!(result.is_none());
         }
     }
 
@@ -119,7 +119,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_none());
+            prop_assert!(result.is_none());
         }
     }
 
@@ -136,7 +136,7 @@ mod json_rpc_batch_response_id_validation_tests {
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
-            assert!(result.is_none());
+            prop_assert!(result.is_none());
         }
     }
 
