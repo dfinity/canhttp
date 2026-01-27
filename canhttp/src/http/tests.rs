@@ -43,7 +43,7 @@ async fn should_convert_http_request() {
         let request = request_builder
             .max_response_bytes(max_response_bytes)
             .transform_context(transform_context.clone())
-            .is_replicated(is_replicated)
+            .replicated(is_replicated)
             .header("Content-Type", "application/json")
             .body(body.clone())
             .unwrap();
@@ -77,7 +77,7 @@ async fn should_convert_is_replicated_flag() {
 
     for is_replicated in [true, false] {
         let request = http::Request::get(url)
-            .is_replicated(is_replicated)
+            .replicated(is_replicated)
             .body(vec![])
             .unwrap();
 
@@ -213,7 +213,7 @@ async fn should_convert_both_request_and_responses() {
     let request = http::Request::post(url)
         .max_response_bytes(max_response_bytes)
         .transform_context(transform_context.clone())
-        .is_replicated(is_replicated)
+        .replicated(is_replicated)
         .header("Content-Type", "application/json")
         .body(body.clone())
         .unwrap();

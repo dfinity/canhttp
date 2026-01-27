@@ -187,7 +187,7 @@ pub trait IsReplicatedRequestExtension: Sized {
     fn get_is_replicated(&self) -> Option<bool>;
 
     /// Convenience method to use the builder pattern.
-    fn is_replicated(mut self, value: bool) -> Self {
+    fn replicated(mut self, value: bool) -> Self {
         self.set_is_replicated(value);
         self
     }
