@@ -11,8 +11,6 @@ use std::{iter, ops::Range};
 
 mod json_rpc_batch_response_id_validation_tests {
     use super::*;
-    use proptest::prop_assume;
-    use proptest::test_runner::TestRunner;
 
     #[test]
     fn should_succeed_for_empty_response() {
