@@ -92,12 +92,12 @@ mod json_rpc_batch_response_id_validation_tests {
 
     proptest! {
         #[test]
-        fn should_return_error_for_too_many_responses(
+        fn should_return_error_for_too_few_responses(
             mut responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
         ) {
             let request_ids = response_ids(&responses);
 
-            // Ensure there is one more response than expected request IDs
+            // Ensure there is one more request ID than responses
             responses.remove(responses.len() - 1);
 
             let result = try_order_responses_by_id(&request_ids, responses);
@@ -108,12 +108,12 @@ mod json_rpc_batch_response_id_validation_tests {
 
     proptest! {
         #[test]
-        fn should_return_error_for_too_few_responses(
+        fn should_return_error_for_too_many_responses(
             responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
         ) {
             let mut request_ids = response_ids(&responses);
 
-            // Ensure there is one more request ID than responses
+            // Ensure there is one more response than expected request IDs
             request_ids.remove(request_ids.len() - 1);
 
             let result = try_order_responses_by_id(&request_ids, responses);
