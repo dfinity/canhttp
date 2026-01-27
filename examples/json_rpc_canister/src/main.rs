@@ -95,7 +95,7 @@ pub async fn make_batch_json_rpc_request() -> SlotInfo {
         .expect("`getSlot` call should succeed")
         .as_u64()
         .expect("Invalid `getSlot` response");
-    println!("Slot: {:?}", slot);
+    ic_cdk::println!("Slot: {:?}", slot);
 
     assert_eq!(get_slot_leader_response.id(), &Id::Number(1));
     let leader = get_slot_leader_response
@@ -104,7 +104,7 @@ pub async fn make_batch_json_rpc_request() -> SlotInfo {
         .as_str()
         .expect("Invalid `getSlotLeader` response")
         .to_string();
-    println!("Slot leader: {:?}", leader);
+    ic_cdk::println!("Slot leader: {:?}", leader);
 
     SlotInfo { slot, leader }
 }
