@@ -11,6 +11,8 @@ use std::{iter, ops::Range};
 
 mod json_rpc_batch_response_id_validation_tests {
     use super::*;
+    use proptest::prop_assume;
+    use proptest::test_runner::TestRunner;
 
     #[test]
     fn should_succeed_for_empty_response() {
@@ -23,11 +25,13 @@ mod json_rpc_batch_response_id_validation_tests {
     proptest! {
         #[test]
         fn should_succeed_with_responses_in_any_order(
-            responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+            (shuffled_responses, request_ids) in arbitrary_responses_with_unique_nonnull_ids(2..10)
+                .prop_flat_map(|responses| {
+                    let request_ids = response_ids(&responses);
+                    (Just(responses).prop_shuffle(), Just(request_ids))
+                })
         ) {
-            let request_ids = response_ids(&responses).into_iter().rev().collect::<Vec<_>>();
-
-            let result = try_order_responses_by_id(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, shuffled_responses);
 
             prop_assert!(result.is_some());
             prop_assert_eq!(request_ids, response_ids(&result.unwrap()));
@@ -37,11 +41,13 @@ mod json_rpc_batch_response_id_validation_tests {
     proptest! {
         #[test]
         fn should_succeed_with_invalid_request_errors_in_any_order(
-            responses in arbitrary_responses_with_null_ids(2..10),
+            (shuffled_responses, request_ids) in arbitrary_responses_with_null_ids(2..10)
+                .prop_flat_map(|responses| {
+                    let request_ids = response_ids(&responses);
+                    (Just(responses).prop_shuffle(), Just(request_ids))
+                })
         ) {
-            let request_ids = response_ids(&responses).into_iter().rev().collect::<Vec<_>>();
-
-            let result = try_order_responses_by_id(&request_ids, responses);
+            let result = try_order_responses_by_id(&request_ids, shuffled_responses);
 
             prop_assert!(result.is_some());
             prop_assert_eq!(request_ids, response_ids(&result.unwrap()));
@@ -55,7 +61,8 @@ mod json_rpc_batch_response_id_validation_tests {
         ) {
             let mut request_ids = response_ids(&responses);
 
-            // Ensure one of the response IDs is not in the request IDs
+            // Ensure one of the response IDs is not in the request IDs, but the request and
+            // response still have the same length
             request_ids.remove(0);
             responses.remove(responses.len() - 1);
 
