@@ -55,14 +55,17 @@ mod json_rpc_batch_response_id_validation_tests {
     proptest! {
         #[test]
         fn should_return_error_for_unexpected_id_in_response(
-            mut responses in arbitrary_responses_with_unique_nonnull_ids(2..10)
+            (mut responses, unexpected_id, i) in arbitrary_responses_with_unique_nonnull_ids(2..10)
+                .prop_flat_map(|mut responses| {
+                    let unexpected_id = responses.pop().unwrap().id().clone();
+                    let batch_size = responses.len();
+                    (Just(responses), Just(unexpected_id), 0..batch_size)
+                })
         ) {
-            let mut request_ids = response_ids(&responses);
+            let request_ids = response_ids(&responses);
 
-            // Ensure one of the response IDs is not in the request IDs, but the request and
-            // response still have the same length
-            request_ids.remove(0);
-            responses.remove(responses.len() - 1);
+            // Ensure one of the response IDs is not in the request IDs,
+            set_id(&mut responses[i], unexpected_id);
 
             let result = try_order_responses_by_id(&request_ids, responses);
 
