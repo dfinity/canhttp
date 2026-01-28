@@ -1,16 +1,31 @@
-use crate::http::json::{JsonConversionLayer, JsonRequestConverter, JsonResponseConverter};
-use crate::http::{HttpRequest, HttpResponse};
-use crate::ConvertServiceBuilder;
+use crate::{
+    http::{
+        json::{
+            ConstantSizeId, CreateJsonRpcIdFilter, HttpBatchJsonRpcRequest,
+            HttpBatchJsonRpcResponse, HttpJsonRpcRequest, HttpJsonRpcResponse, Id,
+            JsonConversionLayer, JsonRequestConverter, JsonResponseConverter, JsonRpcError,
+            JsonRpcRequest, JsonRpcResponse, Version,
+        },
+        HttpRequest, HttpResponse,
+    },
+    ConvertServiceBuilder,
+};
+use assert_matches::assert_matches;
 use http::HeaderValue;
+use itertools::Itertools;
+use proptest::{prelude::any, prop_assert_eq, proptest};
+use serde::{de::DeserializeOwned, Serialize};
 use serde_json::json;
+use std::{
+    fmt::Debug,
+    hash::{DefaultHasher, Hash},
+};
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
+const URL: &str = "https://internetcomputer.org/";
+
 mod json_rpc {
-    use crate::http::json::{Id, JsonRpcError, JsonRpcRequest, JsonRpcResponse, Version};
-    use assert_matches::assert_matches;
-    use serde::de::DeserializeOwned;
-    use serde_json::json;
-    use std::fmt::Debug;
+    use super::*;
 
     #[test]
     fn should_parse_null_id() {
@@ -106,9 +121,7 @@ mod json_rpc {
 }
 
 mod constant_size_id {
-    use crate::http::json::{ConstantSizeId, Id};
-    use proptest::prelude::any;
-    use proptest::{prop_assert_eq, proptest};
+    use super::*;
 
     #[test]
     fn should_add_padding_to_the_left() {
@@ -148,7 +161,7 @@ mod constant_size_id {
 
 #[tokio::test]
 async fn should_convert_json_request() {
-    let url = "https://internetcomputer.org/";
+    let url = URL;
     let mut service = ServiceBuilder::new()
         .convert_request(JsonRequestConverter::<serde_json::Value>::new())
         .service_fn(echo_request);
@@ -166,7 +179,7 @@ async fn should_convert_json_request() {
 
 #[tokio::test]
 async fn should_add_content_type_header_if_missing() {
-    let url = "https://internetcomputer.org/";
+    let url = URL;
     let mut service = ServiceBuilder::new()
         .convert_request(JsonRequestConverter::<serde_json::Value>::new())
         .service_fn(echo_request);
@@ -240,7 +253,7 @@ async fn should_convert_both_request_and_response() {
         .await
         .unwrap()
         .call(
-            http::Request::post("https://internetcomputer.org/")
+            http::Request::post(URL)
                 .body(json!({"foo": "bar"}))
                 .unwrap(),
         )
@@ -251,13 +264,8 @@ async fn should_convert_both_request_and_response() {
 }
 
 mod filter_json_rpc_id {
-    use crate::http::json::{
-        CreateJsonRpcIdFilter, HttpJsonRpcRequest, Id, JsonRpcError, JsonRpcRequest,
-        JsonRpcResponse,
-    };
-    use crate::ConvertServiceBuilder;
-    use serde_json::json;
-    use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
+    use super::*;
+    use std::hash::Hasher;
 
     #[tokio::test]
     async fn should_check_json_rpc_id_is_consistent() {
@@ -266,7 +274,7 @@ mod filter_json_rpc_id {
             response: JsonRpcResponse<serde_json::Value>,
             expected_result: Result<(), String>,
         ) {
-            let request = http::Request::post("https://internetcomputer.org/")
+            let request = http::Request::post(URL)
                 .body(
                     JsonRpcRequest::new("foo", json!(["param1", "param2"]))
                         .with_id(request_id.clone()),
@@ -278,19 +286,9 @@ mod filter_json_rpc_id {
                     Ok::<_, BoxError>(http::Response::new(response.clone()))
                 });
 
-            match service.ready().await.unwrap().call(request).await {
-                Ok(service_response) => {
-                    assert_eq!(expected_result, Ok(()));
-                    assert_eq!(service_response.into_body(), response);
-                }
-                Err(error) => {
-                    let expected_error = expected_result.expect_err("expected error");
-                    assert!(
-                        error.to_string().contains(&expected_error),
-                        "Expected error: {expected_error}, but got {error}",
-                    )
-                }
-            }
+            let service_result = service.ready().await.unwrap().call(request).await;
+
+            assert_expected_result(service_result, expected_result.map(|_| response));
         }
 
         check(
@@ -305,7 +303,6 @@ mod filter_json_rpc_id {
             Err("expected response ID".to_string()),
         )
         .await;
-
         check(
             Id::from(42_u64),
             JsonRpcResponse::from_error(
@@ -335,19 +332,91 @@ mod filter_json_rpc_id {
     }
 
     #[tokio::test]
+    async fn should_check_json_rpc_batch_ids_are_consistent() {
+        async fn check(
+            request_ids: Vec<Id>,
+            responses: Vec<JsonRpcResponse<serde_json::Value>>,
+            expected_result: Result<(), String>,
+        ) {
+            assert_eq!(request_ids.len(), responses.len());
+
+            let request = http::Request::post(URL)
+                .body(
+                    request_ids
+                        .into_iter()
+                        .enumerate()
+                        .map(|(i, id)| {
+                            JsonRpcRequest::new("foo", json!(["param1", {"param2": i}])).with_id(id)
+                        })
+                        .collect(),
+                )
+                .unwrap();
+            let mut service = ServiceBuilder::new()
+                .filter_response(CreateJsonRpcIdFilter::new())
+                .map_response(shuffle_json_rpc_batch_responses)
+                .service_fn(
+                    |_request: HttpBatchJsonRpcRequest<serde_json::Value>| async {
+                        Ok::<_, BoxError>(http::Response::new(responses.clone()))
+                    },
+                );
+
+            let service_result = service.ready().await.unwrap().call(request).await;
+
+            assert_expected_result(service_result, expected_result.map(|_| responses));
+        }
+
+        check(
+            vec![Id::from(42_u64), Id::from(43_u64), Id::from(44_u64)],
+            vec![
+                JsonRpcResponse::from_ok(Id::from(42_u64), json!(1)),
+                JsonRpcResponse::from_ok(Id::from(43_u64), json!(2)),
+                JsonRpcResponse::from_error(
+                    Id::Null,
+                    JsonRpcError {
+                        code: -32600,
+                        message: "Invalid Request".to_string(),
+                        data: None,
+                    },
+                ),
+            ],
+            Ok(()),
+        )
+        .await;
+        check(
+            vec![Id::from(42_u64), Id::from(43_u64), Id::from(44_u64)],
+            vec![
+                JsonRpcResponse::from_ok(Id::from(42_u64), json!(1)),
+                JsonRpcResponse::from_ok(Id::from(43_u64), json!(2)),
+                JsonRpcResponse::from_error(
+                    Id::Null,
+                    JsonRpcError {
+                        code: -32601,
+                        message: "Method not found".to_string(),
+                        data: None,
+                    },
+                ),
+            ],
+            Err("expected batch response IDs".to_string()),
+        )
+        .await;
+        check(
+            vec![Id::from(42_u64), Id::from(43_u64), Id::from(44_u64)],
+            vec![
+                JsonRpcResponse::from_ok(Id::from(42_u64), json!(1)),
+                JsonRpcResponse::from_ok(Id::from(43_u64), json!(1)),
+                JsonRpcResponse::from_ok(Id::from(45_u64), json!(1)),
+            ],
+            Err("expected batch response IDs".to_string()),
+        )
+        .await;
+    }
+
+    #[tokio::test]
     #[should_panic(expected = "ERROR: a null request ID")]
     async fn should_panic_when_request_id_null() {
         let mut service = ServiceBuilder::new()
             .filter_response(CreateJsonRpcIdFilter::new())
-            .service_fn(
-                |request: HttpJsonRpcRequest<serde_json::Value>| async move {
-                    let id = request.body().id();
-                    Ok::<_, BoxError>(http::Response::new(JsonRpcResponse::from_ok(
-                        id.clone(),
-                        json!("echo"),
-                    )))
-                },
-            );
+            .service_fn(echo_json_rpc_request_id);
 
         let request = JsonRpcRequest::new("foo", json!(["param1", "param2"])).with_id(Id::Null);
 
@@ -355,13 +424,134 @@ mod filter_json_rpc_id {
             .ready()
             .await
             .unwrap()
-            .call(
-                http::Request::post("https://internetcomputer.org/")
-                    .body(request.clone())
-                    .unwrap(),
-            )
+            .call(http::Request::post(URL).body(request).unwrap())
             .await
             .unwrap();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "Expected batch to not be empty")]
+    async fn should_panic_when_json_rpc_batch_empty() {
+        let mut service = ServiceBuilder::new()
+            .filter_response(CreateJsonRpcIdFilter::new())
+            .service_fn(echo_json_rpc_batch_request_ids);
+
+        let _response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(http::Request::post(URL).body(vec![]).unwrap())
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "Expected request IDs to be unique")]
+    async fn should_panic_when_request_ids_not_unique() {
+        let mut service = ServiceBuilder::new()
+            .filter_response(CreateJsonRpcIdFilter::new())
+            .service_fn(echo_json_rpc_batch_request_ids);
+
+        let request = vec![
+            JsonRpcRequest::new("foo", json!(["param1", "param2"])).with_id(Id::from(100_u64)),
+            JsonRpcRequest::new("bar", json!(["param3", "param4"])).with_id(Id::from(101_u64)),
+            JsonRpcRequest::new("bar", json!(["param3", "param4"])).with_id(Id::from(101_u64)),
+        ];
+
+        let _response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(http::Request::post(URL).body(request).unwrap())
+            .await
+            .unwrap();
+    }
+
+    #[tokio::test]
+    #[should_panic(expected = "ERROR: a null request ID")]
+    async fn should_panic_when_json_rpc_batch_contains_null_id() {
+        let mut service = ServiceBuilder::new()
+            .filter_response(CreateJsonRpcIdFilter::new())
+            .service_fn(echo_json_rpc_batch_request_ids);
+
+        let request = vec![
+            JsonRpcRequest::new("foo", json!(["param1", "param2"])).with_id(Id::from(100_u64)),
+            JsonRpcRequest::new("bar", json!(["param3", "param4"])).with_id(Id::from(101_u64)),
+            JsonRpcRequest::new("bar", json!(["param3", "param4"])).with_id(Id::Null),
+        ];
+
+        let _response = service
+            .ready()
+            .await
+            .unwrap()
+            .call(http::Request::post(URL).body(request).unwrap())
+            .await
+            .unwrap();
+    }
+
+    fn assert_expected_result<T: Debug + PartialEq>(
+        service_result: Result<http::Response<T>, BoxError>,
+        expected_result: Result<T, String>,
+    ) {
+        match expected_result {
+            Ok(expected_response) => {
+                let service_response = service_result
+                    .unwrap_or_else(|error| panic!("Expected ok, but got: {error}"))
+                    .into_body();
+                assert_eq!(
+                    service_response, expected_response,
+                    "Expected response: {expected_response:?}, but got {service_response:?}"
+                );
+            }
+            Err(expected_error) => {
+                let service_error = match service_result {
+                    Ok(response) => {
+                        panic!("Expected error, but got {:?}", response.into_body())
+                    }
+                    Err(error) => error,
+                };
+                assert!(
+                    service_error.to_string().contains(&expected_error),
+                    "Expected error: {expected_error}, but got {service_error}",
+                );
+            }
+        }
+    }
+
+    async fn echo_json_rpc_request_id(
+        request: HttpJsonRpcRequest<serde_json::Value>,
+    ) -> Result<HttpJsonRpcResponse<serde_json::Value>, BoxError> {
+        Ok(http::Response::new(JsonRpcResponse::from_ok(
+            request.body().id().clone(),
+            json!("echo"),
+        )))
+    }
+
+    fn shuffle_json_rpc_batch_responses<T: Serialize>(
+        response: HttpBatchJsonRpcResponse<T>,
+    ) -> HttpBatchJsonRpcResponse<T> {
+        response.map(|responses| {
+            responses
+                .into_iter()
+                // Sort responses in a JSON-RPC batch by hash to simulate random shuffling
+                .sorted_by_key(|r| {
+                    let mut hasher = DefaultHasher::new();
+                    serde_json::to_string(r).unwrap().hash(&mut hasher);
+                    hasher.finish()
+                })
+                .collect()
+        })
+    }
+
+    async fn echo_json_rpc_batch_request_ids(
+        request: HttpBatchJsonRpcRequest<serde_json::Value>,
+    ) -> Result<HttpBatchJsonRpcResponse<serde_json::Value>, BoxError> {
+        let responses = request
+            .into_body()
+            .iter()
+            .map(|request| JsonRpcResponse::from_ok(request.id().clone(), json!("echo")))
+            .collect();
+        Ok(http::Response::new(responses))
     }
 }
 
