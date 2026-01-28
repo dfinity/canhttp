@@ -186,7 +186,7 @@ pub trait IsReplicatedRequestExtension: Sized {
     /// Returns the replication mode of the request, if explicitly set.
     fn get_is_replicated(&self) -> Option<bool>;
 
-    /// Convenience method to use the builder pattern.
+    /// Sets the replication mode using the builder pattern.
     fn replicated(mut self, value: bool) -> Self {
         self.set_is_replicated(value);
         self
