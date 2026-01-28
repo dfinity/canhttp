@@ -522,10 +522,7 @@ fn try_order_responses_by_id<T>(
                 Some(response) => response,
                 None => {
                     num_missing_request_ids += 1;
-                    JsonRpcResponse::from_parts(
-                        request_id.clone(),
-                        Err(JsonRpcError::invalid_request()),
-                    )
+                    JsonRpcResponse::from_parts(Id::Null, Err(JsonRpcError::invalid_request()))
                 }
             },
         )
