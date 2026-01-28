@@ -7,8 +7,7 @@
 
 pub use client::{
     Client, HttpsOutcallError, IcError, IsReplicatedRequestExtension,
-    MaxResponseBytesRequestExtension,
-    TransformContextRequestExtension,
+    MaxResponseBytesRequestExtension, TransformContextRequestExtension,
 };
 pub use convert::ConvertServiceBuilder;
 

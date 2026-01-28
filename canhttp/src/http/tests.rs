@@ -4,8 +4,7 @@ use crate::{
         response::{HttpResponse, HttpResponseConversionError},
         HttpConversionLayer, HttpRequestConverter, HttpResponseConverter,
     },
-    ConvertServiceBuilder, IcError, IsReplicatedRequestExtension,
-    MaxResponseBytesRequestExtension,
+    ConvertServiceBuilder, IcError, IsReplicatedRequestExtension, MaxResponseBytesRequestExtension,
     TransformContextRequestExtension,
 };
 use assert_matches::assert_matches;
