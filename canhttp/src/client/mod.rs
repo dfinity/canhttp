@@ -178,6 +178,34 @@ impl TransformContextRequestExtension for IcHttpRequest {
     }
 }
 
+/// Add support for selecting replicated or non-replicated HTTP outcalls.
+///
+/// Warning: non-replicated outcalls are currently experimental.
+/// See the [docs](https://docs.internetcomputer.org/references/ic-interface-spec/#ic-http_request) for more ditails.
+pub trait IsReplicatedRequestExtension: Sized {
+    /// Set the request replication mode.
+    fn set_is_replicated(&mut self, value: bool);
+
+    /// Returns the replication mode of the request, if explicitly set.
+    fn get_is_replicated(&self) -> Option<bool>;
+
+    /// Sets the replication mode using the builder pattern.
+    fn replicated(mut self, value: bool) -> Self {
+        self.set_is_replicated(value);
+        self
+    }
+}
+
+impl IsReplicatedRequestExtension for IcHttpRequest {
+    fn set_is_replicated(&mut self, value: bool) {
+        self.is_replicated = Some(value);
+    }
+
+    fn get_is_replicated(&self) -> Option<bool> {
+        self.is_replicated
+    }
+}
+
 /// Characterize errors that are specific to HTTPs outcalls.
 pub trait HttpsOutcallError {
     /// Determines whether the error indicates that the response was larger than the specified

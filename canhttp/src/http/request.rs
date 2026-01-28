@@ -1,5 +1,8 @@
 use crate::convert::Convert;
-use crate::{MaxResponseBytesRequestExtension, TransformContextRequestExtension};
+use crate::{
+    IsReplicatedRequestExtension, MaxResponseBytesRequestExtension,
+    TransformContextRequestExtension,
+};
 use ic_cdk::management_canister::{
     HttpHeader as IcHttpHeader, HttpMethod as IcHttpMethod, HttpRequestArgs as IcHttpRequest,
     TransformContext,
@@ -67,6 +70,35 @@ impl TransformContextRequestExtension for http::request::Builder {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq)]
+struct IsReplicatedExtension(pub bool);
+
+impl<T> IsReplicatedRequestExtension for http::Request<T> {
+    fn set_is_replicated(&mut self, value: bool) {
+        let extensions = self.extensions_mut();
+        extensions.insert(IsReplicatedExtension(value));
+    }
+
+    fn get_is_replicated(&self) -> Option<bool> {
+        self.extensions()
+            .get::<IsReplicatedExtension>()
+            .map(|e| e.0)
+    }
+}
+
+impl IsReplicatedRequestExtension for http::request::Builder {
+    fn set_is_replicated(&mut self, value: bool) {
+        if let Some(extensions) = self.extensions_mut() {
+            extensions.insert(IsReplicatedExtension(value));
+        }
+    }
+
+    fn get_is_replicated(&self) -> Option<bool> {
+        self.extensions_ref()
+            .and_then(|extensions| extensions.get::<IsReplicatedExtension>().map(|e| e.0))
+    }
+}
+
 /// Error return when converting requests with [`HttpRequestConverter`].
 #[derive(Error, Clone, Debug, Eq, PartialEq)]
 pub enum HttpRequestConversionError {
@@ -119,6 +151,7 @@ impl Convert<HttpRequest> for HttpRequestConverter {
             })
             .collect::<Result<Vec<_>, _>>()?;
         let transform = request.get_transform_context().cloned();
+        let is_replicated = request.get_is_replicated();
         let body = Some(request.into_body());
         Ok(IcHttpRequest {
             url,
@@ -127,7 +160,7 @@ impl Convert<HttpRequest> for HttpRequestConverter {
             headers,
             body,
             transform,
-            is_replicated: None,
+            is_replicated,
         })
     }
 }
