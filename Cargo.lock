@@ -311,7 +311,7 @@ dependencies = [
 
 [[package]]
 name = "canhttp"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "assert_matches",
  "candid",
@@ -1373,7 +1373,7 @@ dependencies = [
 
 [[package]]
 name = "ic-pocket-canister-runtime"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "candid",

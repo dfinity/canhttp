@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.4.1] - 2026-01-30
+## [0.5.0] - 2026-01-30
 
 ### Added
 
@@ -14,9 +14,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Bump `pocket-ic` to v11.0.0 ([#63](https://github.com/dfinity/canhttp/pull/63))
+- Update dependencies ([#72](https://github.com/dfinity/canhttp/pull/72))
 
-[0.4.1]: https://github.com/dfinity/canhttp/compare/0.4.0..0.4.1
+[0.5.0]: https://github.com/dfinity/canhttp/compare/canhttp-0.4.0..canhttp-0.5.0
 
 ## [0.4.0] - 2025-11-21
 
