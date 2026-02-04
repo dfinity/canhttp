@@ -14,6 +14,7 @@ use std::{
 };
 use thiserror::Error;
 use tower::{BoxError, Service, ServiceBuilder};
+use tower_layer::Layer;
 
 /// Thin wrapper around [`ic_cdk::management_canister::http_request`] that implements the
 /// [`tower::Service`] trait. Its functionality can be extended by composing so-called
@@ -243,5 +244,56 @@ impl HttpsOutcallError for BoxError {
             return ic_error.is_response_too_large();
         }
         false
+    }
+}
+
+/// TODO
+#[derive(Clone, Debug, Default)]
+pub struct CanisterReadyLayer;
+
+impl<S> Layer<S> for CanisterReadyLayer {
+    type Service = CanisterReadyService<S>;
+
+    fn layer(&self, inner: S) -> Self::Service {
+        Self::Service { inner }
+    }
+}
+
+/// TODO
+pub struct CanisterReadyService<S> {
+    inner: S,
+}
+
+/// TODO
+#[derive(Error, Clone, Debug, Eq, PartialEq)]
+pub enum CanisterReadyError {
+    /// Canister is not running and has the given status code.
+    #[error("Canister is not running and has status {0}")]
+    CanisterNotRunning(u32),
+}
+
+impl<S, Req> Service<Req> for CanisterReadyService<S>
+where
+    S: Service<Req>,
+    CanisterReadyError: Into<S::Error>,
+{
+    type Response = S::Response;
+    type Error = S::Error;
+    type Future = S::Future;
+
+    fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        use ic_cdk::api::CanisterStatusCode;
+
+        match ic_cdk::api::canister_status() {
+            CanisterStatusCode::Running => self.inner.poll_ready(cx),
+            status => Poll::Ready(Err(CanisterReadyError::CanisterNotRunning(u32::from(
+                status,
+            ))
+            .into())),
+        }
+    }
+
+    fn call(&mut self, req: Req) -> Self::Future {
+        self.inner.call(req)
     }
 }
