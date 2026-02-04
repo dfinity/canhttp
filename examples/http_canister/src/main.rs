@@ -26,7 +26,8 @@ pub async fn make_http_post_request() -> String {
     String::from_utf8_lossy(response.body()).to_string()
 }
 
-/// Make an HTTP POST request.
+/// Make multiple HTTP POST requests in a loop,
+/// ensuring via [`CanisterReadyLayer`] that the loop will stop if the canister is stopped.
 #[update]
 pub async fn infinite_loop_make_http_post_request() -> String {
     let mut client = ServiceBuilder::new()

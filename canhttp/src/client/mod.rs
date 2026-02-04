@@ -237,7 +237,7 @@ impl HttpsOutcallError for BoxError {
     }
 }
 
-/// TODO
+/// A [`tower::Layer`] that wraps services in a [`CanisterReadyService`] middleware.
 #[derive(Clone, Debug, Default)]
 pub struct CanisterReadyLayer;
 
@@ -249,12 +249,16 @@ impl<S> Layer<S> for CanisterReadyLayer {
     }
 }
 
-/// TODO
+/// A [`tower::Service`] that checks that the canister is running before calling the inner service.
+///
+/// This is useful to prevent the canister making new HTTPs outcalls when it is in the stopping state
+/// (see [stop_canister](https://docs.internetcomputer.org/references/ic-interface-spec#ic-stop_canister))
+/// and ensure that the canister will be promptly stopped.
 pub struct CanisterReadyService<S> {
     inner: S,
 }
 
-/// TODO
+/// Error returned by the [`CanisterReadyService`].
 #[derive(Error, Clone, Debug, Eq, PartialEq)]
 pub enum CanisterReadyError {
     /// Canister is not running and has the given status code.
