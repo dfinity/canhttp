@@ -1,3 +1,10 @@
+use candid::{Decode, Encode, Principal};
+use ic_management_canister_types::CanisterIdRecord;
+use ic_management_canister_types::CanisterSettings;
+use pocket_ic::common::rest::{
+    CanisterHttpReply, CanisterHttpResponse, MockCanisterHttpResponse, RawEffectivePrincipal,
+};
+use pocket_ic::PocketIc;
 use test_fixtures::Setup;
 
 #[tokio::test]
@@ -15,14 +22,6 @@ async fn should_make_http_post_request() {
 
 #[test]
 fn should_not_make_http_request_when_stopping() {
-    use candid::{Decode, Encode, Principal};
-    use ic_management_canister_types::CanisterIdRecord;
-    use ic_management_canister_types::CanisterSettings;
-    use pocket_ic::common::rest::{
-        CanisterHttpReply, CanisterHttpResponse, MockCanisterHttpResponse, RawEffectivePrincipal,
-    };
-    use pocket_ic::PocketIc;
-
     let env = PocketIc::new();
     let canister_id = env.create_canister_with_settings(
         None,
