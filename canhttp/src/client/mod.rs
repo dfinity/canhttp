@@ -25,17 +25,15 @@ use tower_layer::Layer;
 /// * [`crate::observability`]: add logging or metrics.
 /// * [`crate::http`]: use types from the [http](https://crates.io/crates/http) crate for requests and responses.
 /// * [`crate::retry::DoubleMaxResponseBytes`]: automatically retry failed requests due to the response being too big.
-#[derive(Clone, Debug, Default)]
-pub struct Client {
-    http_request_when_stopping: bool,
-}
+#[derive(Clone, Debug)]
+pub struct Client;
 
 impl Client {
     /// Create a new client returning custom errors.
     pub fn new_with_error<CustomError: From<IcError>>() -> ConvertError<Client, CustomError> {
         ServiceBuilder::new()
             .convert_error::<CustomError>()
-            .service(Client::default())
+            .service(Client)
     }
 
     /// Creates a new client where the error type is erased.
@@ -74,14 +72,6 @@ impl Service<IcHttpRequest> for Client {
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>>>>;
 
     fn poll_ready(&mut self, _cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        if !self.http_request_when_stopping
-            && ic_cdk::api::canister_status() != ic_cdk::api::CanisterStatusCode::Running
-        {
-            return Poll::Ready(Err(IcError::CallRejected {
-                code: RejectCode::CanisterError,
-                message: "Canister is stopping".to_string(),
-            }));
-        }
         Poll::Ready(Ok(()))
     }
 
