@@ -79,7 +79,7 @@ impl Canister<'_> {
     }
 }
 
-fn canister_wasm(canister_binary_name: &str) -> Vec<u8> {
+pub fn canister_wasm(canister_binary_name: &str) -> Vec<u8> {
     ic_test_utilities_load_wasm::load_wasm(
         PathBuf::from(var("CARGO_MANIFEST_DIR").unwrap()).join("."),
         canister_binary_name,
