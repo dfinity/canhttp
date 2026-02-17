@@ -10,13 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 
 - Support for `StubRuntime` returning `IcError` ([#81](https://github.com/dfinity/canhttp/pull/81))
+- `Clone` implementation for `StubRuntime` ([#79](https://github.com/dfinity/canhttp/pull/79))
 
 ### Changed
 
 - Prevent calls when stopping ([#78](https://github.com/dfinity/canhttp/pull/78))
-- Derive `Clone` for `StubRuntime` ([#79](https://github.com/dfinity/canhttp/pull/79))
 
-[0.1.3]: https://github.com/dfinity/canhttp/compare/0.1.2..0.1.3
+[0.1.3]: https://github.com/dfinity/canhttp/compare/ic-canister-runtime-v0.1.2..ic-canister-runtime-v0.1.3
 
 ## [0.1.2] - 2026-01-30
 

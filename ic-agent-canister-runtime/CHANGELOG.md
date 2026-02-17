@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Updated the following local packages: ic-canister-runtime
+- Update `ic-canister-runtime` ([#83](https://github.com/dfinity/canhttp/pull/83))
 
-[0.1.3]: https://github.com/dfinity/canhttp/compare/0.1.2..0.1.3
+[0.1.3]: https://github.com/dfinity/canhttp/compare/ic-agent-canister-runtime-v0.1.2..ic-agent-canister-runtime-v0.1.3
 
 ## [0.1.2] - 2026-01-30
 
