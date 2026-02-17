@@ -145,13 +145,40 @@ impl From<CandidDecodeFailed> for IcError {
 /// [`http_canister`]: https://github.com/dfinity/canhttp/tree/main/examples/http_canister/
 #[derive(Copy, Clone, Eq, PartialEq, Debug, Default)]
 pub struct IcRuntime {
-    _private: (),
+    allow_calls_when_stopping: bool,
 }
 
 impl IcRuntime {
     /// Create a new instance of [`IcRuntime`].
     pub fn new() -> Self {
         Self::default()
+    }
+
+    /// Allow inter-canister calls when the canister is stopping.
+    ///
+    /// <div class="warning">
+    /// Allowing inter-canister calls when the canister making the calls is stopping
+    /// could prevent that canister from being stopped and therefore upgraded.
+    /// This is because the stopping state does not prevent the canister itself from issuing
+    /// new calls (see the specification on <a href="https://docs.internetcomputer.org/references/ic-interface-spec#ic-stop_canister">stop_canister</a>).
+    /// </div>
+    pub fn allow_calls_when_stopping(mut self, allow: bool) -> Self {
+        self.allow_calls_when_stopping = allow;
+        self
+    }
+
+    fn ensure_allowed_to_make_call(&self) -> Result<(), IcError> {
+        if !self.allow_calls_when_stopping {
+            use ic_cdk::api::CanisterStatusCode;
+
+            return match ic_cdk::api::canister_status() {
+                CanisterStatusCode::Running => Ok(()),
+                CanisterStatusCode::Stopping
+                | CanisterStatusCode::Stopped
+                | CanisterStatusCode::Unrecognized(_) => Err(IcError::CallPerformFailed),
+            };
+        }
+        Ok(())
     }
 }
 
@@ -168,6 +195,7 @@ impl Runtime for IcRuntime {
         In: ArgumentEncoder + Send,
         Out: CandidType + DeserializeOwned,
     {
+        self.ensure_allowed_to_make_call()?;
         Call::unbounded_wait(id, method)
             .with_args(&args)
             .with_cycles(cycles)
@@ -186,6 +214,7 @@ impl Runtime for IcRuntime {
         In: ArgumentEncoder + Send,
         Out: CandidType + DeserializeOwned,
     {
+        self.ensure_allowed_to_make_call()?;
         Call::unbounded_wait(id, method)
             .with_args(&args)
             .await
