@@ -41,7 +41,7 @@ use std::{collections::VecDeque, sync::Mutex};
 /// let result_3: Result<Option<u128>, IcError> = runtime
 ///     .query_call(PRINCIPAL, METHOD, ARGS)
 ///     .await;
-/// assert_eq!(result_3, Err(IcError::CallRejected);
+/// assert_eq!(result_3, Err(IcError::CallRejected));
 /// # Ok(())
 /// # }
 /// ```
