@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Prevent calls when stopping ([#78](https://github.com/dfinity/canhttp/pull/78))
+- Change the default behavior to prevent inter-canister calls when the canister is stopping ([#78](https://github.com/dfinity/canhttp/pull/78))
 
 [0.1.3]: https://github.com/dfinity/canhttp/compare/ic-canister-runtime-v0.1.2..ic-canister-runtime-v0.1.3
 
