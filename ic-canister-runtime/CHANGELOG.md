@@ -11,7 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Derive `Clone` for `StubRuntime` ([#79](https://github.com/dfinity/canhttp/pull/79))
 
-[0.1.3]: https://github.com/dfinity/canhttp/compare/0.1.2..0.1.3
+[0.1.3]: https://github.com/dfinity/canhttp/compare/ic-canister-runtime-v0.1.2..ic-canister-runtime-v0.1.3
 
 ## [0.1.2] - 2026-01-30
 
