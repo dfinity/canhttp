@@ -1,5 +1,6 @@
 use crate::{IcError, Runtime, StubRuntime};
 use candid::{CandidType, Principal};
+use ic_error_types::RejectCode;
 use serde::Deserialize;
 
 const DEFAULT_PRINCIPAL: Principal = Principal::from_slice(&[0x9d, 0xf7, 0x01]);
@@ -39,6 +40,18 @@ async fn should_return_single_stub_response() {
 }
 
 #[tokio::test]
+async fn should_return_single_stub_error() {
+    let expected = IcError::CallPerformFailed;
+    let runtime = StubRuntime::new().add_stub_error(expected.clone());
+
+    let result: Result<MultiResult, IcError> = runtime
+        .update_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS, 0)
+        .await;
+
+    assert_eq!(result, Err(expected));
+}
+
+#[tokio::test]
 async fn should_return_multiple_stub_responses() {
     let expected1 = MultiResult::Consistent("Hello, world!".to_string());
     let expected2 = MultiResult::Inconsistent(vec![
@@ -46,25 +59,32 @@ async fn should_return_multiple_stub_responses() {
         "Goodbye, world!".to_string(),
     ]);
     let expected3 = 0_u128;
+    let expected4 = IcError::CallRejected {
+        code: RejectCode::SysFatal,
+        message: "Fatal error!".to_string(),
+    };
     let runtime = StubRuntime::new()
         .add_stub_response(expected1.clone())
         .add_stub_response(expected2.clone())
-        .add_stub_response(expected3);
+        .add_stub_response(expected3)
+        .add_stub_error(expected4.clone());
 
     let result1: Result<MultiResult, IcError> = runtime
         .update_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS, 0)
         .await;
     assert_eq!(result1, Ok(expected1));
-
     let result2: Result<MultiResult, IcError> = runtime
-        .update_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS, 0)
+        .query_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS)
         .await;
     assert_eq!(result2, Ok(expected2));
-
     let result3: Result<u128, IcError> = runtime
-        .update_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS, 0)
+        .query_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS)
         .await;
     assert_eq!(result3, Ok(expected3));
+    let result4: Result<u128, IcError> = runtime
+        .update_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS, 0)
+        .await;
+    assert_eq!(result4, Err(expected4));
 }
 
 #[tokio::test]
