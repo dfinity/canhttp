@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] - 2026-02-17
+
+### Added
+
+- Support for `StubRuntime` returning `IcError` ([#81](https://github.com/dfinity/canhttp/pull/81))
+- `Clone` implementation for `StubRuntime` ([#79](https://github.com/dfinity/canhttp/pull/79))
+
+### Changed
+
+- Change the default behavior to prevent inter-canister calls when the canister is stopping ([#78](https://github.com/dfinity/canhttp/pull/78))
+
+[0.2.0]: https://github.com/dfinity/canhttp/compare/ic-canister-runtime-v0.1.2..ic-canister-runtime-v0.2.0
+
 ## [0.1.2] - 2026-01-30
 
 ### Changed
