@@ -67,6 +67,28 @@ async fn should_return_multiple_stub_responses() {
     assert_eq!(result3, Ok(expected3));
 }
 
+#[tokio::test]
+async fn should_have_same_responses_in_clone() {
+    let original_runtime = StubRuntime::new()
+        .add_stub_response(1_u64)
+        .add_stub_response(2_u64)
+        .add_stub_response(3_u64);
+    let cloned_runtime = original_runtime.clone();
+
+    let result1: Result<u64, IcError> = original_runtime
+        .query_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS)
+        .await;
+    assert_eq!(result1, Ok(1));
+    let result2: Result<u64, IcError> = cloned_runtime
+        .query_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS)
+        .await;
+    assert_eq!(result2, Ok(2));
+    let result3: Result<u64, IcError> = original_runtime
+        .query_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS)
+        .await;
+    assert_eq!(result3, Ok(3));
+}
+
 #[derive(Clone, Debug, PartialEq, CandidType, Deserialize)]
 enum MultiResult {
     Consistent(String),

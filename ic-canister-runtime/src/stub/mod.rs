@@ -5,6 +5,7 @@ use crate::{IcError, Runtime};
 use async_trait::async_trait;
 use candid::{utils::ArgumentEncoder, CandidType, Decode, Encode, Principal};
 use serde::de::DeserializeOwned;
+use std::sync::Arc;
 use std::{collections::VecDeque, sync::Mutex};
 
 /// An implementation of [`Runtime`] that returns pre-defined results from a queue.
@@ -45,10 +46,10 @@ use std::{collections::VecDeque, sync::Mutex};
 /// # Ok(())
 /// # }
 /// ```
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone)]
 pub struct StubRuntime {
     // Use a mutex so that this struct is Send and Sync
-    call_results: Mutex<VecDeque<Vec<u8>>>,
+    call_results: Arc<Mutex<VecDeque<Vec<u8>>>>,
 }
 
 impl StubRuntime {
