@@ -26,7 +26,7 @@ use std::{collections::VecDeque, sync::Mutex};
 /// let runtime = StubRuntime::new()
 ///     .add_stub_response(1_u64)
 ///     .add_stub_response("two")
-///     .add_stub_response(Some(3_u128));
+///     .add_stub_error(IcError::CallRejected);
 ///
 /// let result_1: Result<u64, IcError> = runtime
 ///     .update_call(PRINCIPAL, METHOD, ARGS, 0)
@@ -39,31 +39,39 @@ use std::{collections::VecDeque, sync::Mutex};
 /// assert_eq!(result_2, Ok("two".to_string()));
 ///
 /// let result_3: Result<Option<u128>, IcError> = runtime
-///     .update_call(PRINCIPAL, METHOD, ARGS, 0)
+///     .query_call(PRINCIPAL, METHOD, ARGS)
 ///     .await;
-/// assert_eq!(result_3, Ok(Some
-/// (3_u128)));
+/// assert_eq!(result_3, Err(IcError::CallRejected);
 /// # Ok(())
 /// # }
 /// ```
 #[derive(Debug, Default, Clone)]
 pub struct StubRuntime {
     // Use a mutex so that this struct is Send and Sync
-    call_results: Arc<Mutex<VecDeque<Vec<u8>>>>,
+    call_results: Arc<Mutex<VecDeque<Result<Vec<u8>, IcError>>>>,
 }
 
 impl StubRuntime {
-    /// Create a new empty [`StubRuntime`].
+    /// Create a new empty [`ic_canister_runtime::StubRuntime`].
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Mutate the [`StubRuntime`] instance to add the given stub response.
+    /// Mutate the [`ic_canister_runtime::StubRuntime`] instance to add the given stub response.
     ///
     /// Panics if the stub response cannot be encoded using Candid.
     pub fn add_stub_response<Out: CandidType>(self, stub_response: Out) -> Self {
         let result = Encode!(&stub_response).expect("Failed to encode Candid stub response");
-        self.call_results.try_lock().unwrap().push_back(result);
+        self.call_results.try_lock().unwrap().push_back(Ok(result));
+        self
+    }
+
+    /// Mutate the [`ic_canister_runtime::StubRuntime`] instance to add the given stub error.
+    pub fn add_stub_error(self, stub_error: impl Into<IcError>) -> Self {
+        self.call_results
+            .try_lock()
+            .unwrap()
+            .push_back(Err(stub_error.into()));
         self
     }
 
@@ -71,13 +79,12 @@ impl StubRuntime {
     where
         Out: CandidType + DeserializeOwned,
     {
-        let bytes = self
-            .call_results
+        self.call_results
             .try_lock()
             .unwrap()
             .pop_front()
-            .unwrap_or_else(|| panic!("No available call response"));
-        Ok(Decode!(&bytes, Out).expect("Failed to decode Candid stub response"))
+            .unwrap_or_else(|| panic!("No available call response"))
+            .map(|bytes| Decode!(&bytes, Out).expect("Failed to decode Candid stub response"))
     }
 }
 
