@@ -140,6 +140,12 @@ impl<'a> PocketIcRuntime<'a> {
     }
 }
 
+impl<'a> AsRef<PocketIc> for PocketIcRuntime<'a> {
+    fn as_ref(&self) -> &'a PocketIc {
+        self.env
+    }
+}
+
 #[async_trait]
 impl Runtime for PocketIcRuntime<'_> {
     async fn update_call<In, Out>(
