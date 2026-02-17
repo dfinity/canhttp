@@ -48,6 +48,7 @@ use std::{collections::VecDeque, sync::Mutex};
 #[derive(Debug, Default, Clone)]
 pub struct StubRuntime {
     // Use a mutex so that this struct is Send and Sync
+    #[allow(clippy::type_complexity)]
     call_results: Arc<Mutex<VecDeque<Result<Vec<u8>, IcError>>>>,
 }
 
