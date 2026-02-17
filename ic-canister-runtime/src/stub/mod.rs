@@ -53,12 +53,12 @@ pub struct StubRuntime {
 }
 
 impl StubRuntime {
-    /// Create a new empty [`ic_canister_runtime::StubRuntime`].
+    /// Create a new empty [`StubRuntime`].
     pub fn new() -> Self {
         Self::default()
     }
 
-    /// Mutate the [`ic_canister_runtime::StubRuntime`] instance to add the given stub response.
+    /// Mutate the [`StubRuntime`] instance to add the given stub response.
     ///
     /// Panics if the stub response cannot be encoded using Candid.
     pub fn add_stub_response<Out: CandidType>(self, stub_response: Out) -> Self {
@@ -67,7 +67,7 @@ impl StubRuntime {
         self
     }
 
-    /// Mutate the [`ic_canister_runtime::StubRuntime`] instance to add the given stub error.
+    /// Mutate the [`StubRuntime`] instance to add the given stub error.
     pub fn add_stub_error(self, stub_error: impl Into<IcError>) -> Self {
         self.call_results
             .try_lock()
