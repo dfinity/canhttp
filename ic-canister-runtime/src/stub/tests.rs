@@ -81,10 +81,10 @@ async fn should_return_multiple_stub_responses() {
         .query_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS)
         .await;
     assert_eq!(result3, Ok(expected3));
-    let result3: Result<u128, IcError> = runtime
+    let result4: Result<u128, IcError> = runtime
         .update_call(DEFAULT_PRINCIPAL, DEFAULT_METHOD, DEFAULT_ARGS, 0)
         .await;
-    assert_eq!(result3, Err(expected4));
+    assert_eq!(result4, Err(expected4));
 }
 
 #[tokio::test]
