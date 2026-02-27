@@ -11,6 +11,7 @@ repository.workspace = true
 documentation = "https://docs.rs/ic-canister-runtime"
 
 [features]
+proxy = ["dep:serde_bytes"]
 wallet = ["dep:regex-lite", "dep:serde_bytes"]
 
 [dependencies]
