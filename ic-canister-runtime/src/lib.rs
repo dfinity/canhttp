@@ -50,6 +50,36 @@ pub trait Runtime {
         Out: CandidType + DeserializeOwned;
 }
 
+#[async_trait]
+impl<R: Runtime + Send + Sync> Runtime for &R {
+    async fn update_call<In, Out>(
+        &self,
+        id: Principal,
+        method: &str,
+        args: In,
+        cycles: u128,
+    ) -> Result<Out, IcError>
+    where
+        In: ArgumentEncoder + Send,
+        Out: CandidType + DeserializeOwned,
+    {
+        (*self).update_call(id, method, args, cycles).await
+    }
+
+    async fn query_call<In, Out>(
+        &self,
+        id: Principal,
+        method: &str,
+        args: In,
+    ) -> Result<Out, IcError>
+    where
+        In: ArgumentEncoder + Send,
+        Out: CandidType + DeserializeOwned,
+    {
+        (*self).query_call(id, method, args).await
+    }
+}
+
 /// Error returned by the Internet Computer when making an inter-canister call.
 #[derive(Error, Clone, Debug, PartialEq, Eq)]
 pub enum IcError {
