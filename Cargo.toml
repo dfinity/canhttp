@@ -22,7 +22,7 @@ readme = "README.md"
 [workspace.dependencies]
 assert_matches = "1.5.0"
 async-trait = "0.1.89"
-candid = { version = "0.10.20" }
+candid = { version = "0.10.24" }
 canhttp = { version = "0.5.1", path = "canhttp" }
 ciborium = "0.2.2"
 derive_more = { version = "2.1.1", features = ["from", "try_unwrap", "unwrap"] }
