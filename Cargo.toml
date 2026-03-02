@@ -22,12 +22,12 @@ readme = "README.md"
 [workspace.dependencies]
 assert_matches = "1.5.0"
 async-trait = "0.1.89"
-candid = { version = "0.10.20" }
+candid = { version = "0.10.24" }
 canhttp = { version = "0.5.1", path = "canhttp" }
 ciborium = "0.2.2"
 derive_more = { version = "2.1.1", features = ["from", "try_unwrap", "unwrap"] }
-futures-channel = "0.3.31"
-futures-util = "0.3.31"
+futures-channel = "0.3.32"
+futures-util = "0.3.32"
 http = "1.4.0"
 ic-agent = "0.45.0"
 ic-canister-runtime = { version = "0.2.0", path = "ic-canister-runtime" }
@@ -39,22 +39,22 @@ ic-test-utilities-load-wasm = { git = "https://github.com/dfinity/ic", tag = "re
 itertools = "0.14.0"
 maplit = "1.0.2"
 num-traits = "0.2.19"
-pin-project = "1.1.10"
+pin-project = "1.1.11"
 pocket-ic = "12.0.0"
-proptest = "1.9.0"
-regex-lite = "0.1.8"
+proptest = "1.10.0"
+regex-lite = "0.1.9"
 serde = "1.0"
 serde_bytes = "0.11.19"
 serde_json = "1.0"
 sha2 = "0.10.9"
-strum = { version = "0.27.2", features = ["derive"] }
+strum = { version = "0.28.0", features = ["derive"] }
 test_fixtures = { path = "test_fixtures" }
 thiserror = "2.0.18"
 tokio = "1.49.0"
 tower = "0.5.3"
 tower-layer = "0.3.3"
 url = "2.5.8"
-uuid = "1.20.0"
+uuid = "1.21.0"
 
 [profile.release]
 debug = false
