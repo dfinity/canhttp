@@ -1,23 +1,20 @@
 //! Example of a canister using `canhttp` to issue HTTP requests.
 
 use canhttp::{
-    cycles::{ChargeMyself, CyclesAccountingServiceBuilder},
+    cycles::{ChargeCaller, ChargeMyself, CyclesAccountingServiceBuilder, CyclesChargingPolicy},
     http::HttpConversionLayer,
     observability::ObservabilityLayer,
     CanisterReadyLayer, Client, MaxResponseBytesRequestExtension,
 };
-use http::Request;
+use http_canister::InsufficientCyclesError;
 use ic_cdk::update;
 use tower::{BoxError, Service, ServiceBuilder, ServiceExt};
 
-/// Make an HTTP POST request.
+/// Make an HTTP POST request and do not charge the user for it.
 #[update]
-pub async fn make_http_post_request() -> String {
-    let response = http_client()
-        .ready()
-        .await
-        .expect("Client should be ready")
-        .call(request())
+pub async fn charge_canister_for_http_request() -> String {
+    // Use cycles from the canister to pay for HTTPs outcalls
+    let response = make_http_post_request(ChargeMyself::default())
         .await
         .expect("Request should succeed");
 
@@ -26,13 +23,41 @@ pub async fn make_http_post_request() -> String {
     String::from_utf8_lossy(response.body()).to_string()
 }
 
+/// Make an HTTP POST request and charge the user for it.
+#[update]
+pub async fn charge_caller_for_http_request() -> Result<String, InsufficientCyclesError> {
+    // Use cycles attached by the caller to pay for HTTPs outcalls and charge an additional fee.
+    match make_http_post_request(ChargeCaller::new(|_request, cost| cost + 1_000_000)).await {
+        Ok(response) => {
+            assert_eq!(response.status(), http::StatusCode::OK);
+            Ok(String::from_utf8_lossy(response.body()).to_string())
+        }
+        Err(e) => Err(InsufficientCyclesError::try_from(e).expect("Request should succeed")),
+    }
+}
+
+async fn make_http_post_request<C>(
+    cycles_charging_policy: C,
+) -> Result<http::Response<Vec<u8>>, BoxError>
+where
+    C: CyclesChargingPolicy + Clone,
+    <C as CyclesChargingPolicy>::Error: std::error::Error + Send + Sync + 'static,
+{
+    http_client(cycles_charging_policy)
+        .ready()
+        .await
+        .expect("Client should be ready")
+        .call(request())
+        .await
+}
+
 /// Make multiple HTTP POST requests in a loop,
 /// ensuring via [`CanisterReadyLayer`] that the loop will stop if the canister is stopped.
 #[update]
 pub async fn infinite_loop_make_http_post_request() -> String {
     let mut client = ServiceBuilder::new()
         .layer(CanisterReadyLayer)
-        .service(http_client());
+        .service(http_client(ChargeMyself::default()));
 
     loop {
         match client.ready().await {
@@ -45,8 +70,13 @@ pub async fn infinite_loop_make_http_post_request() -> String {
     }
 }
 
-fn http_client(
-) -> impl Service<http::Request<Vec<u8>>, Response = http::Response<Vec<u8>>, Error = BoxError> {
+fn http_client<C>(
+    cycles_charging_policy: C,
+) -> impl Service<http::Request<Vec<u8>>, Response = http::Response<Vec<u8>>, Error = BoxError>
+where
+    C: CyclesChargingPolicy + Clone,
+    <C as CyclesChargingPolicy>::Error: std::error::Error + Send + Sync + 'static,
+{
     ServiceBuilder::new()
         // Print request, response and errors to the console
         .layer(
@@ -61,13 +91,13 @@ fn http_client(
         )
         // Only deal with types from the http crate.
         .layer(HttpConversionLayer)
-        // Use cycles from the canister to pay for HTTPs outcalls
-        .cycles_accounting(ChargeMyself::default())
+        // The strategy to use to charge cycles for the request
+        .cycles_accounting(cycles_charging_policy)
         // The actual client
         .service(Client::new_with_box_error())
 }
 
-fn request() -> Request<Vec<u8>> {
+fn request() -> http::Request<Vec<u8>> {
     fn httpbin_base_url() -> String {
         option_env!("HTTPBIN_URL")
             .unwrap_or_else(|| "https://httpbin.org")
