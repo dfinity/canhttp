@@ -143,7 +143,7 @@ pub fn canister_wasm(canister_binary_name: &str) -> Vec<u8> {
 }
 
 async fn proxy_wasm() -> Vec<u8> {
-    const DOWNLOAD_PATH: &str = "./wasms/proxy.wasm";
+    const DOWNLOAD_PATH: &str = "../../test_fixtures/wasms/proxy.wasm";
     const DOWNLOAD_URL: &str =
         "https://github.com/dfinity/proxy-canister/releases/download/v0.1.0/proxy.wasm";
 
@@ -160,7 +160,7 @@ async fn proxy_wasm() -> Vec<u8> {
         .unwrap_or_else(|e| panic!("Failed to read bytes from canister WASM: {e:?}"))
         .to_vec();
 
-    let _ = fs::write(&path, &bytes);
+    let _ = fs::write(&path, &bytes).expect("Failed to save downloaded file");
 
     bytes
 }

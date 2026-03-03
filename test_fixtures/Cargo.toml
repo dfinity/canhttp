@@ -12,4 +12,4 @@ ic-pocket-canister-runtime = { workspace = true }
 ic-test-utilities-load-wasm = { workspace = true }
 pocket-ic = { workspace = true }
 serde = { workspace = true }
-reqwest = "0.12.28"
+reqwest = { workspace = true }
