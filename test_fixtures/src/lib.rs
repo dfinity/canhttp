@@ -160,7 +160,7 @@ async fn proxy_wasm() -> Vec<u8> {
         .unwrap_or_else(|e| panic!("Failed to read bytes from canister WASM: {e:?}"))
         .to_vec();
 
-    let _ = fs::write(&path, &bytes).expect("Failed to save downloaded file");
+    fs::write(&path, &bytes).expect("Failed to save downloaded file");
 
     bytes
 }
