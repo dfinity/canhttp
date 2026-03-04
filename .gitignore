@@ -7,5 +7,3 @@ target/
 .vscode/*
 !.vscode/extensions.json
 .idea
-
-test_fixtures/wasms
