@@ -54,6 +54,62 @@ pub trait Runtime {
         Out: CandidType + DeserializeOwned;
 }
 
+/// Blanket implementation of [`Runtime`] for references to types that implement [`Runtime`].
+///
+/// # Examples
+///
+/// ```rust
+/// # #[tokio::main]
+/// # async fn main() -> Result<(), Box<dyn std::error::Error>> {
+/// use candid::Principal;
+/// use ic_canister_runtime::{IcError, Runtime, StubRuntime};
+///
+/// let runtime = StubRuntime::new()
+///     .add_stub_response(1_u64)
+///     .add_stub_response(2_u64);
+///
+/// async fn call<R: Runtime>(runtime: R) -> u64 {
+///     const PRINCIPAL: Principal = Principal::from_slice(&[0x9d, 0xf7, 0x01]);
+///     runtime.query_call(PRINCIPAL, "method", ("args",))
+///         .await
+///         .expect("Call failed!")
+/// }
+///
+/// assert_eq!(call(&runtime).await, 1_u64);
+/// assert_eq!(call(runtime).await, 2_u64);
+/// # Ok(())
+/// # }
+/// ```
+#[async_trait]
+impl<R: Runtime + Send + Sync> Runtime for &R {
+    async fn update_call<In, Out>(
+        &self,
+        id: Principal,
+        method: &str,
+        args: In,
+        cycles: u128,
+    ) -> Result<Out, IcError>
+    where
+        In: ArgumentEncoder + Send,
+        Out: CandidType + DeserializeOwned,
+    {
+        (*self).update_call(id, method, args, cycles).await
+    }
+
+    async fn query_call<In, Out>(
+        &self,
+        id: Principal,
+        method: &str,
+        args: In,
+    ) -> Result<Out, IcError>
+    where
+        In: ArgumentEncoder + Send,
+        Out: CandidType + DeserializeOwned,
+    {
+        (*self).query_call(id, method, args).await
+    }
+}
+
 /// Error returned by the Internet Computer when making an inter-canister call.
 #[derive(Error, Clone, Debug, PartialEq, Eq)]
 pub enum IcError {
