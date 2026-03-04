@@ -23,7 +23,9 @@ async fn should_make_batch_json_rpc_request() {
         .await;
 
     assert!(result.slot > 0);
-    assert_eq!(result.leader.len(), 44);
+    // Solana public keys in base58 encoding are 32-44 characters depending on the key's
+    // binary representation
+    assert!((32..=44).contains(&result.leader.len()));
 }
 
 #[derive(CandidType, Deserialize)]
