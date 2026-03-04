@@ -23,7 +23,7 @@ async fn should_make_batch_json_rpc_request() {
         .await;
 
     assert!(result.slot > 0);
-    assert!(result.leader.len() > 0);
+    assert!(!result.leader.is_empty());
 }
 
 #[derive(CandidType, Deserialize)]
