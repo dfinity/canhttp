@@ -17,5 +17,6 @@ serde_json = { workspace = true }
 tower = { workspace = true }
 
 [dev-dependencies]
+regex-lite = { workspace = true }
 test_fixtures = { workspace = true }
 tokio = { workspace = true, features = ["full"] }
