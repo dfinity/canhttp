@@ -1675,7 +1675,6 @@ dependencies = [
  "canhttp",
  "http",
  "ic-cdk",
- "regex-lite",
  "serde",
  "serde_json",
  "test_fixtures",
