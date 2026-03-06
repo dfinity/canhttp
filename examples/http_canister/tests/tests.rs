@@ -15,7 +15,7 @@ async fn should_make_http_post_request_with_cycles_attached() {
 
     let http_request_result = setup
         .canister()
-        .update_call::<_, String>("charge_canister_for_http_request", ())
+        .update_call::<_, String>("make_http_post_request", ())
         .await;
     assert!(http_request_result.contains("Hello, World!"));
     assert!(http_request_result.contains("\"X-Id\": \"42\""));
@@ -28,7 +28,7 @@ async fn should_make_http_request_with_sufficient_cycles_attached() {
     let http_request_result = setup
         .canister()
         .update_call_with_cycles::<_, Result<String, InsufficientCyclesError>>(
-            "charge_caller_for_http_request",
+            "make_http_post_request_and_charge_user_cycles",
             (),
             1,
         )
@@ -38,7 +38,7 @@ async fn should_make_http_request_with_sufficient_cycles_attached() {
     let http_request_result = setup
         .canister()
         .update_call_with_cycles::<_, Result<String, InsufficientCyclesError>>(
-            "charge_caller_for_http_request",
+            "make_http_post_request_and_charge_user_cycles",
             (),
             1_000_000,
         )
