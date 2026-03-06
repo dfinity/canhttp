@@ -57,8 +57,9 @@ impl Setup {
         let Setup {
             env,
             canister_id,
-            proxy_canister_id: _,
+            proxy_canister_id,
         } = self;
+        assert!(proxy_canister_id.is_none(), "Proxy canister already setup");
 
         let proxy_canister_id = env
             .create_canister_with_settings(
