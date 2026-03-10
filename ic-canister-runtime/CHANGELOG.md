@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-03-10
+
+### Added
+
+- Add `ProxyRuntime` ([#84](https://github.com/dfinity/canhttp/pull/84))
+
+### Changed
+
+- Implement `Runtime` for `Runtime` references ([#85](https://github.com/dfinity/canhttp/pull/85))
+
+### Removed
+
+- Remove `ProxyRuntime` and add proxy feature to `PocketIcRuntime` ([#92](https://github.com/dfinity/canhttp/pull/92))
+
+[0.2.1]: https://github.com/dfinity/canhttp/compare/0.2.0..0.2.1
+
 ## [0.2.0] - 2026-02-17
 
 ### Added
