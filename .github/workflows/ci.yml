@@ -78,9 +78,10 @@ jobs:
 
       - name: 'Download proxy canister WASM'
         run: |
-          mkdir -p $HOME/wasm
-          curl -L "https://github.com/dfinity/proxy-canister/releases/download/${PROXY_CANISTER_VERSION}/proxy.wasm" -o $HOME/wasm/proxy.wasm
-          echo "PROXY_CANISTER_WASM_PATH=$HOME/wasm/proxy.wasm" >> $GITHUB_ENV
+          PROXY_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/test-artifacts
+          mkdir -p $PROXY_CANISTER_WASM_PATH
+          curl -L "https://github.com/dfinity/proxy-canister/releases/download/${PROXY_CANISTER_VERSION}/proxy.wasm" -o "${PROXY_CANISTER_WASM_PATH}/proxy.wasm"
+          echo "PROXY_CANISTER_WASM_PATH=${PROXY_CANISTER_WASM_PATH}/proxy.wasm" >> $GITHUB_ENV
 
       - name: 'Install PocketIC server'
         uses: dfinity/pocketic@main
