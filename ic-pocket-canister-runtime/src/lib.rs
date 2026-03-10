@@ -168,7 +168,7 @@ impl<'a> PocketIcRuntime<'a> {
                 id,
                 self.caller,
                 method,
-                encode_args(args).unwrap_or_else(panic_when_encode_fails),
+                encode_args_or_panic(args),
             )
             .await
             .map_err(parse_reject_response)?;
@@ -235,7 +235,7 @@ impl Runtime for PocketIcRuntime<'_> {
                 id,
                 self.caller,
                 method,
-                encode_args(args).unwrap_or_else(panic_when_encode_fails),
+                encode_args_or_panic(args),
             )
             .await
             .map_err(parse_reject_response)?;
@@ -316,8 +316,8 @@ where
     })
 }
 
-fn panic_when_encode_fails(err: candid::error::Error) -> Vec<u8> {
-    panic!("failed to encode args: {err}")
+fn encode_args_or_panic<Tuple: ArgumentEncoder>(arguments: Tuple) -> Vec<u8> {
+    encode_args(arguments).unwrap_or_else(|e| panic!("failed to encode args: {e}"))
 }
 
 async fn tick_until_http_requests(env: &PocketIc) -> Vec<CanisterHttpRequest> {

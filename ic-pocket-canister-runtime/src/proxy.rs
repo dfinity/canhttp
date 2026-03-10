@@ -1,6 +1,7 @@
 //! Proxy canister types for routing update calls through a proxy to attach cycles.
 
-use candid::{decode_one, encode_args, utils::ArgumentEncoder, CandidType, Deserialize, Principal};
+use super::encode_args_or_panic;
+use candid::{decode_one, utils::ArgumentEncoder, CandidType, Deserialize, Principal};
 use ic_canister_runtime::IcError;
 use ic_error_types::RejectCode;
 use serde::Serialize;
@@ -25,7 +26,7 @@ impl ProxyArgs {
         Self {
             canister_id,
             method: method.to_string(),
-            args: encode_args(args).unwrap_or_else(panic_when_encode_fails),
+            args: encode_args_or_panic(args),
             cycles,
         }
     }
@@ -70,8 +71,4 @@ pub fn decode_response(bytes: Vec<u8>) -> Result<Vec<u8>, IcError> {
             }),
         },
     }
-}
-
-fn panic_when_encode_fails(err: candid::error::Error) -> Vec<u8> {
-    panic!("failed to encode args: {err}")
 }
