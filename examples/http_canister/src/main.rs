@@ -62,13 +62,9 @@ pub async fn infinite_loop_make_http_post_request() -> String {
     }
 }
 
-fn http_client<C>(
+fn http_client<C: CyclesChargingPolicy<Error: Into<BoxError>> + Clone>(
     cycles_charging_policy: C,
-) -> impl Service<http::Request<Vec<u8>>, Response = http::Response<Vec<u8>>, Error = BoxError>
-where
-    C: CyclesChargingPolicy + Clone,
-    <C as CyclesChargingPolicy>::Error: std::error::Error + Send + Sync + 'static,
-{
+) -> impl Service<http::Request<Vec<u8>>, Response = http::Response<Vec<u8>>, Error = BoxError> {
     ServiceBuilder::new()
         // Print request, response and errors to the console
         .layer(
