@@ -19,6 +19,7 @@ ic-cdk = { workspace = true }
 ic-error-types = { workspace = true }
 pocket-ic = { workspace = true }
 serde = { workspace = true }
+serde_bytes = { workspace = true }
 serde_json = { workspace = true }
 tokio = { workspace = true }
 url = { workspace = true }

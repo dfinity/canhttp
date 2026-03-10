@@ -13,6 +13,7 @@ on:
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-Dwarnings"
+  PROXY_CANISTER_VERSION: "v0.1.0"
 
 jobs:
   lint:
@@ -74,6 +75,12 @@ jobs:
           echo "HTTP_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/wasm32-unknown-unknown/release/http_canister.wasm" >> "$GITHUB_ENV"
           echo "JSON_RPC_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/wasm32-unknown-unknown/release/json_rpc_canister.wasm" >> "$GITHUB_ENV"
           echo "MULTI_CANISTER_WASM_PATH=$GITHUB_WORKSPACE/target/wasm32-unknown-unknown/release/multi_canister.wasm" >> "$GITHUB_ENV"
+
+      - name: 'Download proxy canister WASM'
+        run: |
+          mkdir -p $HOME/wasm
+          curl -L "https://github.com/dfinity/proxy-canister/releases/download/${PROXY_CANISTER_VERSION}/proxy.wasm" -o $HOME/wasm/proxy.wasm
+          echo "PROXY_CANISTER_WASM_PATH=$HOME/wasm/proxy.wasm" >> $GITHUB_ENV
 
       - name: 'Install PocketIC server'
         uses: dfinity/pocketic@main

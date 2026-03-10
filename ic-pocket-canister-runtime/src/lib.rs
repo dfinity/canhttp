@@ -5,6 +5,7 @@
 #![forbid(missing_docs)]
 
 mod mock;
+mod proxy;
 
 use async_trait::async_trait;
 use candid::{decode_one, encode_args, utils::ArgumentEncoder, CandidType, Principal};
@@ -76,6 +77,7 @@ pub struct PocketIcRuntime<'a> {
     // the `Runtime::update_call` method using interior mutability.
     // This is necessary since `Runtime::update_call` takes an immutable reference to the runtime.
     mocks: Option<Mutex<Box<dyn ExecuteHttpOutcallMocks>>>,
+    proxy_canister_id: Option<Principal>,
 }
 
 impl<'a> PocketIcRuntime<'a> {
@@ -86,6 +88,7 @@ impl<'a> PocketIcRuntime<'a> {
             env,
             caller,
             mocks: None,
+            proxy_canister_id: None,
         }
     }
 
@@ -138,26 +141,26 @@ impl<'a> PocketIcRuntime<'a> {
         self.mocks = Some(Mutex::new(Box::new(mocks)));
         self
     }
-}
 
-impl<'a> AsRef<PocketIc> for PocketIcRuntime<'a> {
-    fn as_ref(&self) -> &'a PocketIc {
-        self.env
+    /// Route update calls through a [proxy canister](https://github.com/dfinity/proxy-canister)
+    /// to attach cycles to them.
+    ///
+    /// When a proxy canister is configured, all `update_call` requests are forwarded through
+    /// the proxy canister, which attaches the specified cycles before calling the target canister.
+    /// Query calls are not affected and go directly to the target canister.
+    pub fn with_proxy_canister(mut self, proxy_canister_id: Principal) -> Self {
+        self.proxy_canister_id = Some(proxy_canister_id);
+        self
     }
-}
 
-#[async_trait]
-impl Runtime for PocketIcRuntime<'_> {
-    async fn update_call<In, Out>(
+    async fn submit_and_await_call<In>(
         &self,
         id: Principal,
         method: &str,
         args: In,
-        _cycles: u128,
-    ) -> Result<Out, IcError>
+    ) -> Result<Vec<u8>, IcError>
     where
         In: ArgumentEncoder + Send,
-        Out: CandidType + DeserializeOwned,
     {
         let message_id = self
             .env
@@ -180,8 +183,38 @@ impl Runtime for PocketIcRuntime<'_> {
         } else {
             self.env.await_call(message_id).await
         }
-        .map(decode_call_response)
-        .map_err(parse_reject_response)?
+        .map_err(parse_reject_response)
+    }
+}
+
+impl<'a> AsRef<PocketIc> for PocketIcRuntime<'a> {
+    fn as_ref(&self) -> &'a PocketIc {
+        self.env
+    }
+}
+
+#[async_trait]
+impl Runtime for PocketIcRuntime<'_> {
+    async fn update_call<In, Out>(
+        &self,
+        id: Principal,
+        method: &str,
+        args: In,
+        cycles: u128,
+    ) -> Result<Out, IcError>
+    where
+        In: ArgumentEncoder + Send,
+        Out: CandidType + DeserializeOwned,
+    {
+        let bytes = match self.proxy_canister_id {
+            Some(proxy_id) => {
+                let proxy_args = proxy::ProxyArgs::new(id, method, args, cycles);
+                let response = self.submit_and_await_call(proxy_id, "proxy", (proxy_args,)).await?;
+                proxy::decode_response(response)?
+            }
+            None => self.submit_and_await_call(id, method, args).await?,
+        };
+        decode_call_response(bytes)
     }
 
     async fn query_call<In, Out>(
@@ -194,7 +227,8 @@ impl Runtime for PocketIcRuntime<'_> {
         In: ArgumentEncoder + Send,
         Out: CandidType + DeserializeOwned,
     {
-        self.env
+        let bytes = self
+            .env
             .query_call(
                 id,
                 self.caller,
@@ -202,8 +236,8 @@ impl Runtime for PocketIcRuntime<'_> {
                 encode_args(args).unwrap_or_else(panic_when_encode_fails),
             )
             .await
-            .map(decode_call_response)
-            .map_err(parse_reject_response)?
+            .map_err(parse_reject_response)?;
+        decode_call_response(bytes)
     }
 }
 

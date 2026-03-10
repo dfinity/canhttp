@@ -1,6 +1,7 @@
+use assert_matches::assert_matches;
 use candid::{Decode, Encode, Principal};
-use ic_management_canister_types::CanisterIdRecord;
-use ic_management_canister_types::CanisterSettings;
+use ic_canister_runtime::IcError;
+use ic_management_canister_types::{CanisterIdRecord, CanisterSettings};
 use pocket_ic::common::rest::{
     CanisterHttpReply, CanisterHttpResponse, MockCanisterHttpResponse, RawEffectivePrincipal,
 };
@@ -16,6 +17,34 @@ async fn should_make_http_post_request() {
         .update_call::<_, String>("make_http_post_request", ())
         .await;
 
+    assert!(http_request_result.contains("Hello, World!"));
+    assert!(http_request_result.contains("\"X-Id\": \"42\""));
+}
+
+#[tokio::test]
+async fn should_attach_cycles_to_canister_call() {
+    const REQUIRED_CYCLES: u128 = 1_000_000;
+
+    let setup = Setup::new("http_canister").await.with_proxy().await;
+
+    let http_request_result = setup
+        .canister()
+        .try_update_call_with_cycles::<_, String>(
+            "make_http_post_request_and_charge_user_cycles",
+            (),
+            REQUIRED_CYCLES - 1,
+        )
+        .await;
+    assert_matches!(http_request_result, Err(IcError::CallRejected { code: _, message }) if message.contains("InsufficientCyclesError"));
+
+    let http_request_result = setup
+        .canister()
+        .update_call_with_cycles::<_, String>(
+            "make_http_post_request_and_charge_user_cycles",
+            (),
+            REQUIRED_CYCLES,
+        )
+        .await;
     assert!(http_request_result.contains("Hello, World!"));
     assert!(http_request_result.contains("\"X-Id\": \"42\""));
 }
