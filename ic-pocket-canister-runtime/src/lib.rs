@@ -209,7 +209,9 @@ impl Runtime for PocketIcRuntime<'_> {
         let bytes = match self.proxy_canister_id {
             Some(proxy_id) => {
                 let proxy_args = proxy::ProxyArgs::new(id, method, args, cycles);
-                let response = self.submit_and_await_call(proxy_id, "proxy", (proxy_args,)).await?;
+                let response = self
+                    .submit_and_await_call(proxy_id, "proxy", (proxy_args,))
+                    .await?;
                 proxy::decode_response(response)?
             }
             None => self.submit_and_await_call(id, method, args).await?,
