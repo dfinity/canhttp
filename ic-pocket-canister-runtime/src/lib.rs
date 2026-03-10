@@ -164,12 +164,7 @@ impl<'a> PocketIcRuntime<'a> {
     {
         let message_id = self
             .env
-            .submit_call(
-                id,
-                self.caller,
-                method,
-                encode_args_or_panic(args),
-            )
+            .submit_call(id, self.caller, method, encode_args_or_panic(args))
             .await
             .map_err(parse_reject_response)?;
         if let Some(mock) = &self.mocks {
@@ -231,12 +226,7 @@ impl Runtime for PocketIcRuntime<'_> {
     {
         let bytes = self
             .env
-            .query_call(
-                id,
-                self.caller,
-                method,
-                encode_args_or_panic(args),
-            )
+            .query_call(id, self.caller, method, encode_args_or_panic(args))
             .await
             .map_err(parse_reject_response)?;
         decode_call_response(bytes)

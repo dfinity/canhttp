@@ -167,19 +167,12 @@ async fn proxy_wasm() -> Vec<u8> {
         .map(PathBuf::from)
         .unwrap_or(PathBuf::from(var("CARGO_MANIFEST_DIR").unwrap()).join(DEFAULT_PATH));
 
-    if let Ok(wasm) = fs::read(&path) {
-        return wasm;
+    if !std::path::Path::new(&path).exists() {
+        std::process::Command::new("curl")
+            .args(["-L", "-o", path.to_str().unwrap(), DOWNLOAD_URL])
+            .status()
+            .unwrap_or_else(|e| panic!("Failed to download canister WASM: {e:?}"));
     }
 
-    let bytes = reqwest::get(DOWNLOAD_URL)
-        .await
-        .unwrap_or_else(|e| panic!("Failed to fetch canister WASM: {e:?}"))
-        .bytes()
-        .await
-        .unwrap_or_else(|e| panic!("Failed to read bytes from canister WASM: {e:?}"))
-        .to_vec();
-
-    fs::write(&path, &bytes).expect("Failed to save downloaded file");
-
-    bytes
+    fs::read(&path).unwrap_or_else(|e| panic!("Failed to read proxy canister WASM: {e}"))
 }
