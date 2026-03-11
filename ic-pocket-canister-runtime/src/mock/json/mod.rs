@@ -72,56 +72,24 @@ impl SingleJsonRpcMatcher {
 }
 
 /// Matches [`CanisterHttpRequest`]s whose body is a JSON-RPC request.
+///
+/// The type parameter `B` determines what kind of JSON-RPC body is matched:
+/// * [`SingleJsonRpcMatcher`] for single JSON-RPC requests (see [`JsonRpcRequestMatcher`])
+/// * `Vec<SingleJsonRpcMatcher>` for batch JSON-RPC requests (see [`BatchJsonRpcRequestMatcher`])
 #[derive(Clone, Debug)]
-pub struct JsonRpcRequestMatcher {
-    method: String,
-    id: Option<Id>,
-    params: Option<Value>,
+pub struct JsonRpcHttpRequestMatcher<B> {
+    body: B,
     url: Option<Url>,
     host: Option<Host>,
     request_headers: Option<Vec<CanisterHttpHeader>>,
     max_response_bytes: Option<u64>,
 }
 
-impl JsonRpcRequestMatcher {
-    /// Create a [`JsonRpcRequestMatcher`] that matches only JSON-RPC requests with the given method.
-    pub fn with_method(method: impl Into<String>) -> Self {
-        Self {
-            method: method.into(),
-            id: None,
-            params: None,
-            url: None,
-            host: None,
-            request_headers: None,
-            max_response_bytes: None,
-        }
-    }
+/// Matches [`CanisterHttpRequest`]s whose body is a single JSON-RPC request.
+pub type JsonRpcRequestMatcher = JsonRpcHttpRequestMatcher<SingleJsonRpcMatcher>;
 
-    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests whose JSON-RPC request ID is a
-    /// [`ConstantSizeId`] with the given value.
-    pub fn with_id(self, id: u64) -> Self {
-        self.with_raw_id(Id::from(ConstantSizeId::from(id)))
-    }
-
-    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests whose JSON-RPC request ID is an
-    /// [`Id`] with the given value.
-    pub fn with_raw_id(self, id: Id) -> Self {
-        Self {
-            id: Some(id),
-            ..self
-        }
-    }
-
-    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests with the given JSON-RPC request
-    /// parameters.
-    pub fn with_params(self, params: impl Into<Value>) -> Self {
-        Self {
-            params: Some(params.into()),
-            ..self
-        }
-    }
-
-    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests with the given [URL].
+impl<B> JsonRpcHttpRequestMatcher<B> {
+    /// Mutates the matcher to match only requests with the given [URL].
     ///
     /// [URL]: https://internetcomputer.org/docs/references/ic-interface-spec#ic-http_request
     pub fn with_url(self, url: &str) -> Self {
@@ -131,7 +99,7 @@ impl JsonRpcRequestMatcher {
         }
     }
 
-    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests whose [URL] has the given host.
+    /// Mutates the matcher to match only requests whose [URL] has the given host.
     ///
     /// [URL]: https://internetcomputer.org/docs/references/ic-interface-spec#ic-http_request
     pub fn with_host(self, host: &str) -> Self {
@@ -141,7 +109,7 @@ impl JsonRpcRequestMatcher {
         }
     }
 
-    /// Mutates the [`JsonRpcRequestMatcher`] to match requests with the given HTTP headers.
+    /// Mutates the matcher to match requests with the given HTTP headers.
     pub fn with_request_headers(self, headers: Vec<(impl ToString, impl ToString)>) -> Self {
         Self {
             request_headers: Some(
@@ -157,8 +125,7 @@ impl JsonRpcRequestMatcher {
         }
     }
 
-    /// Mutates the [`JsonRpcRequestMatcher`] to match requests with the given
-    /// [`max_response_bytes`].
+    /// Mutates the matcher to match requests with the given [`max_response_bytes`].
     ///
     /// [`max_response_bytes`]: https://internetcomputer.org/docs/references/ic-interface-spec#ic-http_request
     pub fn with_max_response_bytes(self, max_response_bytes: impl Into<u64>) -> Self {
@@ -167,10 +134,8 @@ impl JsonRpcRequestMatcher {
             ..self
         }
     }
-}
 
-impl CanisterHttpRequestMatcher for JsonRpcRequestMatcher {
-    fn matches(&self, request: &CanisterHttpRequest) -> bool {
+    fn matches_http(&self, request: &CanisterHttpRequest) -> bool {
         let req_url = Url::from_str(&request.url).expect("BUG: invalid URL");
         if let Some(ref mock_url) = self.url {
             if mock_url != &req_url {
@@ -201,31 +166,64 @@ impl CanisterHttpRequestMatcher for JsonRpcRequestMatcher {
                 return false;
             }
         }
-        match serde_json::from_slice::<JsonRpcRequest<Value>>(&request.body) {
-            Ok(actual_body) => {
-                if self.method != actual_body.method() {
-                    return false;
-                }
-                if let Some(ref id) = self.id {
-                    if id != actual_body.id() {
-                        return false;
-                    }
-                }
-                if let Some(ref params) = self.params {
-                    if Some(params) != actual_body.params() {
-                        return false;
-                    }
-                }
-            }
-            // Not a JSON-RPC request
-            Err(_) => return false,
-        }
         if let Some(max_response_bytes) = self.max_response_bytes {
             if Some(max_response_bytes) != request.max_response_bytes {
                 return false;
             }
         }
         true
+    }
+}
+
+impl JsonRpcHttpRequestMatcher<SingleJsonRpcMatcher> {
+    /// Create a [`JsonRpcRequestMatcher`] that matches only JSON-RPC requests with the given method.
+    pub fn with_method(method: impl Into<String>) -> Self {
+        Self {
+            body: SingleJsonRpcMatcher::with_method(method),
+            url: None,
+            host: None,
+            request_headers: None,
+            max_response_bytes: None,
+        }
+    }
+
+    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests whose JSON-RPC request ID is a
+    /// [`ConstantSizeId`] with the given value.
+    pub fn with_id(self, id: u64) -> Self {
+        Self {
+            body: self.body.with_id(id),
+            ..self
+        }
+    }
+
+    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests whose JSON-RPC request ID is an
+    /// [`Id`] with the given value.
+    pub fn with_raw_id(self, id: Id) -> Self {
+        Self {
+            body: self.body.with_raw_id(id),
+            ..self
+        }
+    }
+
+    /// Mutates the [`JsonRpcRequestMatcher`] to match only requests with the given JSON-RPC request
+    /// parameters.
+    pub fn with_params(self, params: impl Into<Value>) -> Self {
+        Self {
+            body: self.body.with_params(params),
+            ..self
+        }
+    }
+}
+
+impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<SingleJsonRpcMatcher> {
+    fn matches(&self, request: &CanisterHttpRequest) -> bool {
+        if !self.matches_http(request) {
+            return false;
+        }
+        match serde_json::from_slice::<JsonRpcRequest<Value>>(&request.body) {
+            Ok(actual_body) => self.body.matches_body(&actual_body),
+            Err(_) => false,
+        }
     }
 }
 
