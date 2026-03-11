@@ -13,7 +13,10 @@ use ic_canister_runtime::{IcError, Runtime};
 use ic_cdk::call::{CallFailed, CallRejected};
 use ic_error_types::RejectCode;
 pub use mock::{
-    json::{JsonRpcRequestMatcher, JsonRpcResponse},
+    json::{
+        BatchJsonRpcRequestMatcher, JsonRpcHttpRequestMatcher, JsonRpcRequestMatcher,
+        JsonRpcResponse, SingleJsonRpcMatcher,
+    },
     AnyCanisterHttpRequestMatcher, CanisterHttpReject, CanisterHttpReply,
     CanisterHttpRequestMatcher, MockHttpOutcall, MockHttpOutcallBuilder, MockHttpOutcalls,
     MockHttpOutcallsBuilder,
