@@ -173,9 +173,10 @@ mod batch_json_rpc_request_matcher_tests {
 
     #[test]
     fn should_not_match_wrong_batch_size() {
-        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
-            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_id(DEFAULT_RPC_ID),
-        ]);
+        let matcher = JsonRpcHttpRequestMatcher::batch(vec![SingleJsonRpcMatcher::with_method(
+            DEFAULT_RPC_METHOD,
+        )
+        .with_id(DEFAULT_RPC_ID)]);
         assert!(!matcher.matches(&batch_request()));
     }
 
