@@ -227,6 +227,42 @@ impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<SingleJsonRpcMatch
     }
 }
 
+/// Matches [`CanisterHttpRequest`]s whose body is a batch JSON-RPC request.
+pub type BatchJsonRpcRequestMatcher = JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>>;
+
+impl JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
+    /// Create a [`BatchJsonRpcRequestMatcher`] that matches a batch JSON-RPC request
+    /// containing exactly the given individual matchers, matched pairwise in order.
+    pub fn batch(matchers: Vec<SingleJsonRpcMatcher>) -> Self {
+        Self {
+            body: matchers,
+            url: None,
+            host: None,
+            request_headers: None,
+            max_response_bytes: None,
+        }
+    }
+}
+
+impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
+    fn matches(&self, request: &CanisterHttpRequest) -> bool {
+        if !self.matches_http(request) {
+            return false;
+        }
+        match serde_json::from_slice::<Vec<JsonRpcRequest<Value>>>(&request.body) {
+            Ok(actual_batch) => {
+                actual_batch.len() == self.body.len()
+                    && self
+                        .body
+                        .iter()
+                        .zip(actual_batch.iter())
+                        .all(|(matcher, req)| matcher.matches_body(req))
+            }
+            Err(_) => false,
+        }
+    }
+}
+
 /// A mocked JSON-RPC HTTP outcall response.
 #[derive(Clone)]
 pub struct JsonRpcResponse {
