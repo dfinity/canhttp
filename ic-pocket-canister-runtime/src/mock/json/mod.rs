@@ -11,6 +11,66 @@ use serde_json::Value;
 use std::{collections::BTreeSet, str::FromStr};
 use url::{Host, Url};
 
+/// Matches the body of a single JSON-RPC request.
+#[derive(Clone, Debug)]
+pub struct SingleJsonRpcMatcher {
+    method: String,
+    id: Option<Id>,
+    params: Option<Value>,
+}
+
+impl SingleJsonRpcMatcher {
+    /// Create a [`SingleJsonRpcMatcher`] that matches only JSON-RPC requests with the given method.
+    pub fn with_method(method: impl Into<String>) -> Self {
+        Self {
+            method: method.into(),
+            id: None,
+            params: None,
+        }
+    }
+
+    /// Mutates the [`SingleJsonRpcMatcher`] to match only requests whose JSON-RPC request ID is a
+    /// [`ConstantSizeId`] with the given value.
+    pub fn with_id(self, id: u64) -> Self {
+        self.with_raw_id(Id::from(ConstantSizeId::from(id)))
+    }
+
+    /// Mutates the [`SingleJsonRpcMatcher`] to match only requests whose JSON-RPC request ID is an
+    /// [`Id`] with the given value.
+    pub fn with_raw_id(self, id: Id) -> Self {
+        Self {
+            id: Some(id),
+            ..self
+        }
+    }
+
+    /// Mutates the [`SingleJsonRpcMatcher`] to match only requests with the given JSON-RPC request
+    /// parameters.
+    pub fn with_params(self, params: impl Into<Value>) -> Self {
+        Self {
+            params: Some(params.into()),
+            ..self
+        }
+    }
+
+    fn matches_body(&self, request: &JsonRpcRequest<Value>) -> bool {
+        if self.method != request.method() {
+            return false;
+        }
+        if let Some(ref id) = self.id {
+            if id != request.id() {
+                return false;
+            }
+        }
+        if let Some(ref params) = self.params {
+            if Some(params) != request.params() {
+                return false;
+            }
+        }
+        true
+    }
+}
+
 /// Matches [`CanisterHttpRequest`]s whose body is a JSON-RPC request.
 #[derive(Clone, Debug)]
 pub struct JsonRpcRequestMatcher {
