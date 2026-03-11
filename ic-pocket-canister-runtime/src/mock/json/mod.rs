@@ -7,6 +7,7 @@ use pocket_ic::common::rest::{
     CanisterHttpHeader, CanisterHttpMethod, CanisterHttpReply, CanisterHttpRequest,
     CanisterHttpResponse,
 };
+use serde::Serialize;
 use serde_json::Value;
 use std::{collections::BTreeSet, str::FromStr};
 use url::{Host, Url};
@@ -264,14 +265,34 @@ impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcM
 }
 
 /// A mocked JSON-RPC HTTP outcall response.
+///
+/// The type parameter `B` determines what kind of JSON-RPC body is returned:
+/// * [`Value`] for single JSON-RPC responses (see [`JsonRpcResponse`])
+/// * `Vec<Value>` for batch JSON-RPC responses (see [`BatchJsonRpcResponse`])
 #[derive(Clone)]
-pub struct JsonRpcResponse {
+pub struct JsonRpcHttpResponse<B> {
     status: u16,
     headers: Vec<CanisterHttpHeader>,
-    body: Value,
+    body: B,
 }
 
-impl From<Value> for JsonRpcResponse {
+/// A mocked single JSON-RPC HTTP outcall response.
+pub type JsonRpcResponse = JsonRpcHttpResponse<Value>;
+
+/// A mocked batch JSON-RPC HTTP outcall response.
+pub type BatchJsonRpcResponse = JsonRpcHttpResponse<Vec<Value>>;
+
+impl<B: Serialize> From<JsonRpcHttpResponse<B>> for CanisterHttpResponse {
+    fn from(response: JsonRpcHttpResponse<B>) -> Self {
+        CanisterHttpResponse::CanisterHttpReply(CanisterHttpReply {
+            status: response.status,
+            headers: response.headers,
+            body: serde_json::to_vec(&response.body).unwrap(),
+        })
+    }
+}
+
+impl From<Value> for JsonRpcHttpResponse<Value> {
     fn from(body: Value) -> Self {
         Self {
             status: 200,
@@ -281,44 +302,44 @@ impl From<Value> for JsonRpcResponse {
     }
 }
 
-impl JsonRpcResponse {
-    /// Mutates the response to set the given JSON-RPC response ID to a [`ConstantSizeId`] with the
-    /// given value.
-    pub fn with_id(self, id: u64) -> JsonRpcResponse {
-        self.with_raw_id(Id::from(ConstantSizeId::from(id)))
-    }
-
-    /// Mutates the response to set the given JSON-RPC response ID to the given [`Id`].
-    pub fn with_raw_id(mut self, id: Id) -> JsonRpcResponse {
-        self.body["id"] = serde_json::to_value(id).expect("BUG: cannot serialize ID");
-        self
-    }
-}
-
-impl From<&Value> for JsonRpcResponse {
+impl From<&Value> for JsonRpcHttpResponse<Value> {
     fn from(body: &Value) -> Self {
         Self::from(body.clone())
     }
 }
 
-impl From<String> for JsonRpcResponse {
+impl From<String> for JsonRpcHttpResponse<Value> {
     fn from(body: String) -> Self {
         Self::from(Value::from_str(&body).expect("BUG: invalid JSON-RPC response"))
     }
 }
 
-impl From<&str> for JsonRpcResponse {
+impl From<&str> for JsonRpcHttpResponse<Value> {
     fn from(body: &str) -> Self {
         Self::from(body.to_string())
     }
 }
 
-impl From<JsonRpcResponse> for CanisterHttpResponse {
-    fn from(response: JsonRpcResponse) -> Self {
-        CanisterHttpResponse::CanisterHttpReply(CanisterHttpReply {
-            status: response.status,
-            headers: response.headers,
-            body: serde_json::to_vec(&response.body).unwrap(),
-        })
+impl JsonRpcHttpResponse<Value> {
+    /// Mutates the response to set the given JSON-RPC response ID to a [`ConstantSizeId`] with the
+    /// given value.
+    pub fn with_id(self, id: u64) -> Self {
+        self.with_raw_id(Id::from(ConstantSizeId::from(id)))
+    }
+
+    /// Mutates the response to set the given JSON-RPC response ID to the given [`Id`].
+    pub fn with_raw_id(mut self, id: Id) -> Self {
+        self.body["id"] = serde_json::to_value(id).expect("BUG: cannot serialize ID");
+        self
+    }
+}
+
+impl From<Vec<Value>> for JsonRpcHttpResponse<Vec<Value>> {
+    fn from(body: Vec<Value>) -> Self {
+        Self {
+            status: 200,
+            headers: vec![],
+            body,
+        }
     }
 }
