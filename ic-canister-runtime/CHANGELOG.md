@@ -7,19 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.2.1] - 2026-03-10
 
-### Added
-
-- Add `ProxyRuntime` ([#84](https://github.com/dfinity/canhttp/pull/84))
-
 ### Changed
 
+- Update dependencies ([#89](https://github.com/dfinity/canhttp/pull/89))
 - Implement `Runtime` for `Runtime` references ([#85](https://github.com/dfinity/canhttp/pull/85))
 
-### Removed
-
-- Remove `ProxyRuntime` and add proxy feature to `PocketIcRuntime` ([#92](https://github.com/dfinity/canhttp/pull/92))
-
-[0.2.1]: https://github.com/dfinity/canhttp/compare/0.2.0..0.2.1
+[0.2.1]: https://github.com/dfinity/canhttp/compare/ic-canister-runtime-v0.2.0..ic-canister-runtime-v0.2.1
 
 ## [0.2.0] - 2026-02-17
 

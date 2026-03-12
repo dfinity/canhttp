@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Update Cargo.toml dependencies
+- Update dependencies ([#89](https://github.com/dfinity/canhttp/pull/89))
 
-[0.2.1]: https://github.com/dfinity/canhttp/compare/0.2.0..0.2.1
+[0.2.1]: https://github.com/dfinity/canhttp/compare/ic-agent-canister-runtime-v0.2.0..ic-agent-canister-runtime-v0.2.1
 
 ## [0.2.0] - 2026-02-17
 
