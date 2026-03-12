@@ -136,3 +136,144 @@ fn request() -> CanisterHttpRequest {
         max_response_bytes: Some(DEFAULT_MAX_RESPONSE_BYTES),
     }
 }
+
+mod batch_json_rpc_request_matcher_tests {
+    use super::{
+        request, CONTENT_TYPE_HEADER_LOWERCASE, CONTENT_TYPE_VALUE, DEFAULT_HOST,
+        DEFAULT_MAX_RESPONSE_BYTES, DEFAULT_RPC_ID, DEFAULT_RPC_METHOD, DEFAULT_RPC_PARAMS,
+        DEFAULT_URL, SUBNET_ID,
+    };
+    use crate::mock::json::{JsonRpcHttpRequestMatcher, SingleJsonRpcMatcher};
+    use crate::mock::CanisterHttpRequestMatcher;
+    use canhttp::http::json::ConstantSizeId;
+    use pocket_ic::common::rest::{CanisterHttpHeader, CanisterHttpMethod, CanisterHttpRequest};
+    use serde_json::{json, Value};
+
+    const SECOND_RPC_METHOD: &str = "eth_getBlockByNumber";
+    const SECOND_RPC_ID: u64 = 5678;
+
+    #[test]
+    fn should_match_batch_request() {
+        assert!(batch_matcher().matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_single_request() {
+        assert!(!batch_matcher().matches(&request()));
+    }
+
+    #[test]
+    fn should_not_match_wrong_method_in_batch() {
+        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method("eth_getLogs").with_id(DEFAULT_RPC_ID),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
+        ]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_wrong_batch_size() {
+        let matcher = JsonRpcHttpRequestMatcher::batch(vec![SingleJsonRpcMatcher::with_method(
+            DEFAULT_RPC_METHOD,
+        )
+        .with_id(DEFAULT_RPC_ID)]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_wrong_order() {
+        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_id(DEFAULT_RPC_ID),
+        ]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_match_batch_with_url() {
+        assert!(batch_matcher()
+            .with_url(DEFAULT_URL)
+            .matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_batch_with_wrong_url() {
+        assert!(!batch_matcher()
+            .with_url("https://rpc.ankr.com")
+            .matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_match_batch_with_host() {
+        assert!(batch_matcher()
+            .with_host(DEFAULT_HOST)
+            .matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_batch_with_wrong_host() {
+        assert!(!batch_matcher()
+            .with_host("rpc.ankr.com")
+            .matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_match_batch_with_params() {
+        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD)
+                .with_id(DEFAULT_RPC_ID)
+                .with_params(DEFAULT_RPC_PARAMS),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD)
+                .with_id(SECOND_RPC_ID)
+                .with_params(json!(["0x1", true])),
+        ]);
+        assert!(matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_batch_with_wrong_params() {
+        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD)
+                .with_id(DEFAULT_RPC_ID)
+                .with_params(Value::Null),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
+        ]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    fn batch_matcher() -> JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
+        JsonRpcHttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_id(DEFAULT_RPC_ID),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
+        ])
+    }
+
+    fn batch_request() -> CanisterHttpRequest {
+        CanisterHttpRequest {
+            subnet_id: SUBNET_ID,
+            request_id: 0,
+            http_method: CanisterHttpMethod::POST,
+            url: DEFAULT_URL.to_string(),
+            headers: vec![CanisterHttpHeader {
+                name: CONTENT_TYPE_HEADER_LOWERCASE.to_string(),
+                value: CONTENT_TYPE_VALUE.to_string(),
+            }],
+            body: serde_json::to_vec(&json!([
+                {
+                    "jsonrpc": "2.0",
+                    "method": DEFAULT_RPC_METHOD,
+                    "id": ConstantSizeId::from(DEFAULT_RPC_ID).to_string(),
+                    "params": DEFAULT_RPC_PARAMS,
+                },
+                {
+                    "jsonrpc": "2.0",
+                    "method": SECOND_RPC_METHOD,
+                    "id": ConstantSizeId::from(SECOND_RPC_ID).to_string(),
+                    "params": ["0x1", true],
+                },
+            ]))
+            .unwrap(),
+            max_response_bytes: Some(DEFAULT_MAX_RESPONSE_BYTES),
+        }
+    }
+}
