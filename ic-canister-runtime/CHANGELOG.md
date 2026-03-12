@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.1] - 2026-03-10
+
+### Changed
+
+- Update dependencies ([#89](https://github.com/dfinity/canhttp/pull/89))
+- Implement `Runtime` for `Runtime` references ([#85](https://github.com/dfinity/canhttp/pull/85))
+
+[0.2.1]: https://github.com/dfinity/canhttp/compare/ic-canister-runtime-v0.2.0..ic-canister-runtime-v0.2.1
+
 ## [0.2.0] - 2026-02-17
 
 ### Added
