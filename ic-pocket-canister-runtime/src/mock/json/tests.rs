@@ -145,7 +145,7 @@ mod batch_json_rpc_request_matcher_tests {
     };
     use crate::mock::json::{HttpRequestMatcher, SingleJsonRpcMatcher};
     use crate::mock::CanisterHttpRequestMatcher;
-    use canhttp::http::json::ConstantSizeId;
+    use canhttp::http::json::{ConstantSizeId, Id};
     use pocket_ic::common::rest::{CanisterHttpHeader, CanisterHttpMethod, CanisterHttpRequest};
     use serde_json::{json, Value};
 
@@ -236,6 +236,52 @@ mod batch_json_rpc_request_matcher_tests {
             SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD)
                 .with_id(DEFAULT_RPC_ID)
                 .with_params(Value::Null),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
+        ]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_wrong_id_in_batch() {
+        let matcher = HttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_id(9999),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
+        ]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_wrong_raw_id_in_batch() {
+        let matcher = HttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_raw_id(Id::Null),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
+        ]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_swapped_ids_in_batch() {
+        let matcher = HttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_id(SECOND_RPC_ID),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(DEFAULT_RPC_ID),
+        ]);
+        assert!(!matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_match_batch_without_id_constraint() {
+        let matcher = HttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD),
+            SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD),
+        ]);
+        assert!(matcher.matches(&batch_request()));
+    }
+
+    #[test]
+    fn should_not_match_numeric_id_instead_of_string_id() {
+        let matcher = HttpRequestMatcher::batch(vec![
+            SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD)
+                .with_raw_id(Id::Number(DEFAULT_RPC_ID)),
             SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
         ]);
         assert!(!matcher.matches(&batch_request()));
