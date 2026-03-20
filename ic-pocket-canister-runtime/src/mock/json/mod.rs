@@ -72,13 +72,13 @@ impl SingleJsonRpcMatcher {
     }
 }
 
-/// Matches [`CanisterHttpRequest`]s whose body is a JSON-RPC request.
+/// Matches [`CanisterHttpRequest`]s whose body can be deserialized and matched by `B`.
 ///
-/// The type parameter `B` determines what kind of JSON-RPC body is matched:
+/// The type parameter `B` determines what kind of body is matched:
 /// * [`SingleJsonRpcMatcher`] for single JSON-RPC requests (see [`JsonRpcRequestMatcher`])
 /// * `Vec<SingleJsonRpcMatcher>` for batch JSON-RPC requests (see [`BatchJsonRpcRequestMatcher`])
 #[derive(Clone, Debug)]
-pub struct JsonRpcHttpRequestMatcher<B> {
+pub struct HttpRequestMatcher<B> {
     body: B,
     url: Option<Url>,
     host: Option<Host>,
@@ -87,9 +87,9 @@ pub struct JsonRpcHttpRequestMatcher<B> {
 }
 
 /// Matches [`CanisterHttpRequest`]s whose body is a single JSON-RPC request.
-pub type JsonRpcRequestMatcher = JsonRpcHttpRequestMatcher<SingleJsonRpcMatcher>;
+pub type JsonRpcRequestMatcher = HttpRequestMatcher<SingleJsonRpcMatcher>;
 
-impl<B> JsonRpcHttpRequestMatcher<B> {
+impl<B> HttpRequestMatcher<B> {
     /// Mutates the matcher to match only requests with the given [URL].
     ///
     /// [URL]: https://internetcomputer.org/docs/references/ic-interface-spec#ic-http_request
@@ -176,7 +176,7 @@ impl<B> JsonRpcHttpRequestMatcher<B> {
     }
 }
 
-impl JsonRpcHttpRequestMatcher<SingleJsonRpcMatcher> {
+impl HttpRequestMatcher<SingleJsonRpcMatcher> {
     /// Create a [`JsonRpcRequestMatcher`] that matches only JSON-RPC requests with the given method.
     pub fn with_method(method: impl Into<String>) -> Self {
         Self {
@@ -216,7 +216,7 @@ impl JsonRpcHttpRequestMatcher<SingleJsonRpcMatcher> {
     }
 }
 
-impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<SingleJsonRpcMatcher> {
+impl CanisterHttpRequestMatcher for HttpRequestMatcher<SingleJsonRpcMatcher> {
     fn matches(&self, request: &CanisterHttpRequest) -> bool {
         if !self.matches_http(request) {
             return false;
@@ -229,9 +229,9 @@ impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<SingleJsonRpcMatch
 }
 
 /// Matches [`CanisterHttpRequest`]s whose body is a batch JSON-RPC request.
-pub type BatchJsonRpcRequestMatcher = JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>>;
+pub type BatchJsonRpcRequestMatcher = HttpRequestMatcher<Vec<SingleJsonRpcMatcher>>;
 
-impl JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
+impl HttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
     /// Create a [`BatchJsonRpcRequestMatcher`] that matches a batch JSON-RPC request
     /// containing exactly the given individual matchers, matched pairwise in order.
     pub fn batch(matchers: Vec<SingleJsonRpcMatcher>) -> Self {
@@ -245,7 +245,7 @@ impl JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
     }
 }
 
-impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
+impl CanisterHttpRequestMatcher for HttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
     fn matches(&self, request: &CanisterHttpRequest) -> bool {
         if !self.matches_http(request) {
             return false;
@@ -264,26 +264,26 @@ impl CanisterHttpRequestMatcher for JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcM
     }
 }
 
-/// A mocked JSON-RPC HTTP outcall response.
+/// A mocked HTTP outcall response.
 ///
-/// The type parameter `B` determines what kind of JSON-RPC body is returned:
+/// The type parameter `B` determines what kind of body is returned:
 /// * [`Value`] for single JSON-RPC responses (see [`JsonRpcResponse`])
 /// * `Vec<Value>` for batch JSON-RPC responses (see [`BatchJsonRpcResponse`])
 #[derive(Clone)]
-pub struct JsonRpcHttpResponse<B> {
+pub struct HttpResponse<B> {
     status: u16,
     headers: Vec<CanisterHttpHeader>,
     body: B,
 }
 
 /// A mocked single JSON-RPC HTTP outcall response.
-pub type JsonRpcResponse = JsonRpcHttpResponse<Value>;
+pub type JsonRpcResponse = HttpResponse<Value>;
 
 /// A mocked batch JSON-RPC HTTP outcall response.
-pub type BatchJsonRpcResponse = JsonRpcHttpResponse<Vec<Value>>;
+pub type BatchJsonRpcResponse = HttpResponse<Vec<Value>>;
 
-impl<B: Serialize> From<JsonRpcHttpResponse<B>> for CanisterHttpResponse {
-    fn from(response: JsonRpcHttpResponse<B>) -> Self {
+impl<B: Serialize> From<HttpResponse<B>> for CanisterHttpResponse {
+    fn from(response: HttpResponse<B>) -> Self {
         CanisterHttpResponse::CanisterHttpReply(CanisterHttpReply {
             status: response.status,
             headers: response.headers,
@@ -292,7 +292,7 @@ impl<B: Serialize> From<JsonRpcHttpResponse<B>> for CanisterHttpResponse {
     }
 }
 
-impl From<Value> for JsonRpcHttpResponse<Value> {
+impl From<Value> for HttpResponse<Value> {
     fn from(body: Value) -> Self {
         Self {
             status: 200,
@@ -302,25 +302,25 @@ impl From<Value> for JsonRpcHttpResponse<Value> {
     }
 }
 
-impl From<&Value> for JsonRpcHttpResponse<Value> {
+impl From<&Value> for HttpResponse<Value> {
     fn from(body: &Value) -> Self {
         Self::from(body.clone())
     }
 }
 
-impl From<String> for JsonRpcHttpResponse<Value> {
+impl From<String> for HttpResponse<Value> {
     fn from(body: String) -> Self {
         Self::from(Value::from_str(&body).expect("BUG: invalid JSON-RPC response"))
     }
 }
 
-impl From<&str> for JsonRpcHttpResponse<Value> {
+impl From<&str> for HttpResponse<Value> {
     fn from(body: &str) -> Self {
         Self::from(body.to_string())
     }
 }
 
-impl JsonRpcHttpResponse<Value> {
+impl HttpResponse<Value> {
     /// Mutates the response to set the given JSON-RPC response ID to a [`ConstantSizeId`] with the
     /// given value.
     pub fn with_id(self, id: u64) -> Self {
@@ -334,7 +334,7 @@ impl JsonRpcHttpResponse<Value> {
     }
 }
 
-impl From<Vec<Value>> for JsonRpcHttpResponse<Vec<Value>> {
+impl From<Vec<Value>> for HttpResponse<Vec<Value>> {
     fn from(body: Vec<Value>) -> Self {
         Self {
             status: 200,

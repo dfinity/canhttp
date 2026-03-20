@@ -143,7 +143,7 @@ mod batch_json_rpc_request_matcher_tests {
         DEFAULT_MAX_RESPONSE_BYTES, DEFAULT_RPC_ID, DEFAULT_RPC_METHOD, DEFAULT_RPC_PARAMS,
         DEFAULT_URL, SUBNET_ID,
     };
-    use crate::mock::json::{JsonRpcHttpRequestMatcher, SingleJsonRpcMatcher};
+    use crate::mock::json::{HttpRequestMatcher, SingleJsonRpcMatcher};
     use crate::mock::CanisterHttpRequestMatcher;
     use canhttp::http::json::ConstantSizeId;
     use pocket_ic::common::rest::{CanisterHttpHeader, CanisterHttpMethod, CanisterHttpRequest};
@@ -164,7 +164,7 @@ mod batch_json_rpc_request_matcher_tests {
 
     #[test]
     fn should_not_match_wrong_method_in_batch() {
-        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+        let matcher = HttpRequestMatcher::batch(vec![
             SingleJsonRpcMatcher::with_method("eth_getLogs").with_id(DEFAULT_RPC_ID),
             SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
         ]);
@@ -173,7 +173,7 @@ mod batch_json_rpc_request_matcher_tests {
 
     #[test]
     fn should_not_match_wrong_batch_size() {
-        let matcher = JsonRpcHttpRequestMatcher::batch(vec![SingleJsonRpcMatcher::with_method(
+        let matcher = HttpRequestMatcher::batch(vec![SingleJsonRpcMatcher::with_method(
             DEFAULT_RPC_METHOD,
         )
         .with_id(DEFAULT_RPC_ID)]);
@@ -182,7 +182,7 @@ mod batch_json_rpc_request_matcher_tests {
 
     #[test]
     fn should_not_match_wrong_order() {
-        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+        let matcher = HttpRequestMatcher::batch(vec![
             SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
             SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_id(DEFAULT_RPC_ID),
         ]);
@@ -219,7 +219,7 @@ mod batch_json_rpc_request_matcher_tests {
 
     #[test]
     fn should_match_batch_with_params() {
-        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+        let matcher = HttpRequestMatcher::batch(vec![
             SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD)
                 .with_id(DEFAULT_RPC_ID)
                 .with_params(DEFAULT_RPC_PARAMS),
@@ -232,7 +232,7 @@ mod batch_json_rpc_request_matcher_tests {
 
     #[test]
     fn should_not_match_batch_with_wrong_params() {
-        let matcher = JsonRpcHttpRequestMatcher::batch(vec![
+        let matcher = HttpRequestMatcher::batch(vec![
             SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD)
                 .with_id(DEFAULT_RPC_ID)
                 .with_params(Value::Null),
@@ -241,8 +241,8 @@ mod batch_json_rpc_request_matcher_tests {
         assert!(!matcher.matches(&batch_request()));
     }
 
-    fn batch_matcher() -> JsonRpcHttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
-        JsonRpcHttpRequestMatcher::batch(vec![
+    fn batch_matcher() -> HttpRequestMatcher<Vec<SingleJsonRpcMatcher>> {
+        HttpRequestMatcher::batch(vec![
             SingleJsonRpcMatcher::with_method(DEFAULT_RPC_METHOD).with_id(DEFAULT_RPC_ID),
             SingleJsonRpcMatcher::with_method(SECOND_RPC_METHOD).with_id(SECOND_RPC_ID),
         ])
