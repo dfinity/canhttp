@@ -5,11 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.5.3] - 2026-03-23
+## [0.6.0] - 2026-03-23
 
 ### Changed
 
-- Update dependencies ([#97](https://github.com/dfinity/canhttp/pull/97))
+- **Breaking:** Update dependencies, including `ic-cdk` to `v0.20.0`. The types `HttpRequestArgs`, `HttpRequestResult`, and `TransformContext` were removed from `ic_cdk` and have been moved to a new crate [`ic-cdk-management-canister`](https://crates.io/crates/ic-cdk-management-canister) ([#97](https://github.com/dfinity/canhttp/pull/97)).
 
 [0.5.3]: https://github.com/dfinity/canhttp/compare/canhttp-v0.5.2..canhttp-v0.5.3
 
