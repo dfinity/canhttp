@@ -3,7 +3,7 @@ mod tests;
 
 use crate::{convert::ConvertError, ConvertServiceBuilder};
 use ic_cdk::call::Error as IcCdkError;
-use ic_cdk::management_canister::{
+use ic_cdk_management_canister::{
     HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse, TransformContext,
 };
 use ic_error_types::RejectCode;
@@ -16,7 +16,7 @@ use thiserror::Error;
 use tower::{BoxError, Service, ServiceBuilder};
 use tower_layer::Layer;
 
-/// Thin wrapper around [`ic_cdk::management_canister::http_request`] that implements the
+/// Thin wrapper around [`ic_cdk_management_canister::http_request`] that implements the
 /// [`tower::Service`] trait. Its functionality can be extended by composing so-called
 /// [tower middlewares](https://docs.rs/tower/latest/tower/#usage).
 ///
@@ -107,14 +107,14 @@ impl Service<IcHttpRequest> for Client {
                 }
                 IcCdkError::CandidDecodeFailed(e) => {
                     // This can only happen if there is a bug in the CDK in the implementation
-                    // of `ic_cdk::management_canister::http_request`.
+                    // of `ic_cdk_management_canister::http_request`.
                     panic!("Candid decode failed while performing HTTP outcall: {e}");
                 }
             }
         }
 
         Box::pin(async move {
-            ic_cdk::management_canister::http_request(&request)
+            ic_cdk_management_canister::http_request(&request)
                 .await
                 .map_err(convert_error)
         })

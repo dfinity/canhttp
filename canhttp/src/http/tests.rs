@@ -10,7 +10,7 @@ use crate::{
 use assert_matches::assert_matches;
 use candid::{Decode, Encode, Principal};
 use http::StatusCode;
-use ic_cdk::management_canister::{
+use ic_cdk_management_canister::{
     HttpHeader as IcHttpHeader, HttpMethod as IcHttpMethod, HttpRequestArgs as IcHttpRequest,
     HttpRequestResult as IcHttpResponse, TransformContext, TransformFunc,
 };

@@ -45,7 +45,7 @@ use crate::{
     convert::{ConvertRequestLayer, Filter},
     ConvertServiceBuilder,
 };
-use ic_cdk::management_canister::HttpRequestArgs;
+use ic_cdk_management_canister::HttpRequestArgs;
 use std::convert::Infallible;
 use thiserror::Error;
 use tower::ServiceBuilder;
@@ -152,7 +152,7 @@ pub enum ChargeCallerError {
 }
 
 /// A middleware to handle cycles accounting, i.e. verify if sufficiently many cycles are available in a request.
-/// The cost of sending the request is calculated by [`ic_cdk::api::cost_http_request`].
+/// The cost of sending the request is calculated by [`ic_cdk_management_canister::cost_http_request`].
 #[derive(Clone, Debug)]
 pub struct CyclesAccounting<ChargingPolicy> {
     charging_policy: ChargingPolicy,
@@ -172,7 +172,7 @@ where
     type Error = ChargingPolicy::Error;
 
     fn filter(&mut self, request: HttpRequestArgs) -> Result<HttpRequestArgs, Self::Error> {
-        let cycles_to_attach = ic_cdk::management_canister::cost_http_request(&request);
+        let cycles_to_attach = ic_cdk_management_canister::cost_http_request(&request);
         self.charging_policy
             .charge_cycles(&request, cycles_to_attach)?;
         Ok(request)
