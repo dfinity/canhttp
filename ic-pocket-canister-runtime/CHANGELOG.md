@@ -11,7 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Support batch JSON-RPC request matching in mocks ([#95](https://github.com/dfinity/canhttp/pull/95))
 
-[0.4.2]: https://github.com/dfinity/canhttp/compare/0.4.1..0.4.2
+### Changed
+
+- Update dependencies ([#97](https://github.com/dfinity/canhttp/pull/97))
+
+[0.4.2]: https://github.com/dfinity/canhttp/compare/ic-pocket-canister-runtime-v0.4.1..ic-pocket-canister-runtime-v0.4.2
 
 ## [0.4.1] - 2026-03-10
 

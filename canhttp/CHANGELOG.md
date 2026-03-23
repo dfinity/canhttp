@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- Cargo upgrade --incompatible
+- Update dependencies ([#97](https://github.com/dfinity/canhttp/pull/97))
 
-[0.5.3]: https://github.com/dfinity/canhttp/compare/0.5.2..0.5.3
+[0.5.3]: https://github.com/dfinity/canhttp/compare/canhttp-v0.5.2..canhttp-v0.5.3
 
 ## [0.5.2] - 2026-03-10
 
