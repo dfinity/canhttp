@@ -17,6 +17,7 @@ wallet = ["dep:regex-lite", "dep:serde_bytes"]
 async-trait = { workspace = true }
 candid = { workspace = true }
 ic-cdk = { workspace = true }
+ic-cdk-management-canister = { workspace = true }
 ic-error-types = { workspace = true }
 regex-lite = { workspace = true, optional = true }
 serde = { workspace = true }

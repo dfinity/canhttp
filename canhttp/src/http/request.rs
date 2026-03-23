@@ -3,7 +3,7 @@ use crate::{
     IsReplicatedRequestExtension, MaxResponseBytesRequestExtension,
     TransformContextRequestExtension,
 };
-use ic_cdk::management_canister::{
+use ic_cdk_management_canister::{
     HttpHeader as IcHttpHeader, HttpMethod as IcHttpMethod, HttpRequestArgs as IcHttpRequest,
     TransformContext,
 };

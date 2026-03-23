@@ -30,7 +30,7 @@
 //!
 //! ```rust
 //! use canhttp::{http::{HttpConversionLayer }, MaxResponseBytesRequestExtension};
-//! use ic_cdk::management_canister::{HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse};
+//! use ic_cdk_management_canister::{HttpRequestArgs as IcHttpRequest, HttpRequestResult as IcHttpResponse};
 //! use tower::{Service, ServiceBuilder, ServiceExt, BoxError};
 //!
 //! async fn always_200_ok(request: IcHttpRequest) -> Result<IcHttpResponse, BoxError> {
@@ -59,8 +59,8 @@
 //! # }
 //! ```
 //!
-//! [`IcHttpRequest`]: ic_cdk::management_canister::HttpRequestArgs
-//! [`IcHttpResponse`]: ic_cdk::management_canister::HttpRequestResult
+//! [`IcHttpRequest`]: ic_cdk_management_canister::HttpRequestArgs
+//! [`IcHttpResponse`]: ic_cdk_management_canister::HttpRequestResult
 
 #[cfg(test)]
 mod tests;

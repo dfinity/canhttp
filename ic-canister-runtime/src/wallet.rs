@@ -1,7 +1,7 @@
 use crate::{IcError, Runtime};
 use async_trait::async_trait;
 use candid::{decode_one, encode_args, utils::ArgumentEncoder, CandidType, Deserialize, Principal};
-use ic_cdk::management_canister::CanisterId;
+use ic_cdk_management_canister::CanisterId;
 use ic_error_types::RejectCode;
 use regex_lite::Regex;
 use serde::de::DeserializeOwned;
