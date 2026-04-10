@@ -17,16 +17,16 @@ jobs:
       cancel-in-progress: true
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
         with:
           fetch-depth: 0
 
       - name: "Install parse-changelog"
-        uses: taiki-e/install-action@parse-changelog
+        uses: taiki-e/install-action@eb170ab528b4949b44322b05ed3a64beb7bc52f2 # parse-changelog
 
       - name: "Authenticate with crates.io"
         id: auth
-        uses: rust-lang/crates-io-auth-action@v1
+        uses: rust-lang/crates-io-auth-action@b7e9a28eded4986ec6b1fa40eeee8f8f165559ec # v1
 
       - name: "Run release-plz"
         id: release-plz
@@ -59,7 +59,7 @@ jobs:
           CHANGELOG="$notes" envsubst < release_notes.md >> ${{ github.workspace }}-RELEASE.txt
 
       - name: "Create Github release"
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
         with:
           draft: true
           tag_name: ${{ env.RELEASE_TAG}}
