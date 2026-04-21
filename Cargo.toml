@@ -55,7 +55,7 @@ tokio = "1.50.0"
 tower = "0.5.3"
 tower-layer = "0.3.3"
 url = "2.5.8"
-uuid = "1.22.0"
+uuid = "1.23.0"
 
 [profile.release]
 debug = false
