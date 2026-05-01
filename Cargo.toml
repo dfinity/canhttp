@@ -29,7 +29,7 @@ derive_more = { version = "2.1.1", features = ["from", "try_unwrap", "unwrap"] }
 futures-channel = "0.3.32"
 futures-util = "0.3.32"
 http = "1.4.0"
-ic-agent = "0.47.1"
+ic-agent = "0.47.2"
 ic-canister-runtime = { version = "0.2.2", path = "ic-canister-runtime" }
 ic-cdk = "0.20.0"
 ic-cdk-management-canister = "0.1.1"
