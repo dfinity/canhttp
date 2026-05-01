@@ -31,7 +31,7 @@ futures-util = "0.3.32"
 http = "1.4.0"
 ic-agent = "0.47.1"
 ic-canister-runtime = { version = "0.2.2", path = "ic-canister-runtime" }
-ic-cdk = "0.20.0"
+ic-cdk = "0.20.1"
 ic-cdk-management-canister = "0.1.1"
 ic-error-types = "0.2"
 ic-management-canister-types = "0.7.1"
