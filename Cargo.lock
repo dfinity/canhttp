@@ -1325,7 +1325,7 @@ dependencies = [
  "http",
  "ic-canister-runtime",
  "ic-cdk",
- "ic-management-canister-types 0.7.1",
+ "ic-management-canister-types 0.5.0",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
  "serde",
@@ -1416,9 +1416,9 @@ dependencies = [
 
 [[package]]
 name = "ic-agent"
-version = "0.47.1"
+version = "0.46.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "694f78a861d8a0643ecee96926573fc44ab43de9fc74e4443c2174a527d243ad"
+checksum = "223e34e74ee20df849226a45e14f6b47f4d53a97f34d571e7b6111728c965489"
 dependencies = [
  "arc-swap",
  "async-channel 2.5.0",
@@ -1439,7 +1439,7 @@ dependencies = [
  "http-body-util",
  "ic-certification",
  "ic-ed25519",
- "ic-transport-types 0.47.1",
+ "ic-transport-types 0.46.2",
  "ic-verify-bls-signature",
  "ic_principal",
  "k256",
@@ -1638,9 +1638,9 @@ dependencies = [
 
 [[package]]
 name = "ic-transport-types"
-version = "0.45.0"
+version = "0.40.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4a775244756a5d97ff19b08071a946a4b4896904e35deb036bf215e80f2e703d"
+checksum = "a2e7706e55836e8104c98149ec0796d20d5213fef972ac01b544657d410f1883"
 dependencies = [
  "candid",
  "hex",
@@ -1656,9 +1656,9 @@ dependencies = [
 
 [[package]]
 name = "ic-transport-types"
-version = "0.47.1"
+version = "0.46.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "aa56b9d37b063451c2aadd864030d587d7c050001a26f55b2416cb33a74646f3"
+checksum = "26448ff3dd1dc1afbfdd008153b2fde7ab117296e866cd7642c4a0cb9c88e421"
 dependencies = [
  "candid",
  "hex",
@@ -2326,9 +2326,9 @@ dependencies = [
 
 [[package]]
 name = "pocket-ic"
-version = "13.0.0"
+version = "12.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "e30621a12b204880522340df8327930d1b7fdefd784c9fc6093b311440fa0506"
+checksum = "03c0fe19b920be1485cdd3d58a70abfa768c2608f8349864d950791fe1a5c193"
 dependencies = [
  "backoff",
  "base64 0.13.1",
@@ -2337,11 +2337,12 @@ dependencies = [
  "hex",
  "ic-certification",
  "ic-management-canister-types 0.5.0",
- "ic-transport-types 0.45.0",
+ "ic-transport-types 0.40.1",
  "reqwest 0.12.28",
  "schemars",
  "semver",
  "serde",
+ "serde_bytes",
  "serde_cbor",
  "serde_json",
  "sha2 0.10.9",
@@ -2422,9 +2423,9 @@ dependencies = [
 
 [[package]]
 name = "proptest"
-version = "1.11.0"
+version = "1.10.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b45fcc2344c680f5025fe57779faef368840d0bd1f42f216291f0dc4ace4744"
+checksum = "37566cb3fdacef14c0737f9546df7cfeadbfbc9fef10991038bf5015d0c80532"
 dependencies = [
  "bit-set",
  "bit-vec",
@@ -2862,9 +2863,9 @@ checksum = "f87165f0995f63a9fbeea62b64d10b4d9d8e78ec6d7d51fb2125fda7bb36788f"
 
 [[package]]
 name = "rustls-webpki"
-version = "0.103.13"
+version = "0.103.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "61c429a8649f110dddef65e2a5ad240f747e85f7758a6bccc7e5777bd33f756e"
+checksum = "df33b2b81ac578cabaf06b89b0631153a3f416b0a886e8a7a1707fb51abbd1ef"
 dependencies = [
  "aws-lc-rs",
  "ring",
@@ -3391,7 +3392,7 @@ version = "1.0.0"
 dependencies = [
  "candid",
  "ic-canister-runtime",
- "ic-management-canister-types 0.7.1",
+ "ic-management-canister-types 0.5.0",
  "ic-pocket-canister-runtime",
  "ic-test-utilities-load-wasm",
  "pocket-ic",
@@ -3766,9 +3767,9 @@ checksum = "b6c140620e7ffbb22c2dee59cafe6084a59b5ffc27a8859a5f0d494b5d52b6be"
 
 [[package]]
 name = "uuid"
-version = "1.23.0"
+version = "1.22.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5ac8b6f42ead25368cf5b098aeb3dc8a1a2c05a3eee8a9a1a68c640edbfc79d9"
+checksum = "a68d3c8f01c0cfa54a75291d83601161799e4a89a39e0929f4b0354d88757a37"
 dependencies = [
  "js-sys",
  "wasm-bindgen",
