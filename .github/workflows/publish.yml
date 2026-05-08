@@ -22,7 +22,9 @@ jobs:
           fetch-depth: 0
 
       - name: "Install parse-changelog"
-        uses: taiki-e/install-action@eb170ab528b4949b44322b05ed3a64beb7bc52f2 # parse-changelog
+        uses: taiki-e/install-action@97a5807a604e12de3a13b52d868ebecaeeea757c # v2.75.4
+        with:
+          tool: parse-changelog@a7723d830fe18d310a89f9692ba0d1ceb069eab7 # v0.6.16
 
       - name: "Authenticate with crates.io"
         id: auth
