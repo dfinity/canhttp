@@ -20,7 +20,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: 'Run clippy'
         run: cargo clippy --locked --all-targets --all-features -- -D clippy::all
@@ -38,7 +38,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: Cargo doc
         run: |
           cargo doc --workspace --no-deps
@@ -49,7 +49,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
       - name: 'Run unit tests'
         run: cargo test --locked --workspace --exclude http_canister --exclude json_rpc_canister --exclude multi_canister
 
@@ -64,7 +64,7 @@ jobs:
       HTTPBIN_URL: http://localhost
     steps:
       - name: 'Checkout'
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4.3.1
 
       - name: 'Build example canisters'
         run: |
@@ -84,7 +84,7 @@ jobs:
           echo "PROXY_CANISTER_WASM_PATH=${PROXY_CANISTER_WASM_PATH}/proxy.wasm" >> $GITHUB_ENV
 
       - name: 'Install PocketIC server'
-        uses: dfinity/pocketic@main
+        uses: dfinity/pocketic@20c33db1aa87cc6ece50857ac632c37acf5e0322 # main
         with:
           pocket-ic-server-version: "12.0.0"
 
