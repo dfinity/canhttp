@@ -40,7 +40,7 @@ ic-test-utilities-load-wasm = { git = "https://github.com/dfinity/ic", tag = "re
 itertools = "0.14.0"
 maplit = "1.0.2"
 num-traits = "0.2.19"
-pin-project = "1.1.11"
+pin-project = "1.1.13"
 pocket-ic = "13.0.0"
 proptest = "1.10.0"
 regex-lite = "0.1.9"
