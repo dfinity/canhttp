@@ -28,7 +28,7 @@ ciborium = "0.2.2"
 derive_more = { version = "2.1.1", features = ["from", "try_unwrap", "unwrap"] }
 futures-channel = "0.3.32"
 futures-util = "0.3.32"
-http = "1.4.0"
+http = "1.4.1"
 ic-agent = "0.47.2"
 ic-canister-runtime = { version = "0.2.3", path = "ic-canister-runtime" }
 ic-cdk = "0.20.1"
